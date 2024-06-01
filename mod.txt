@@ -1,6 +1,6 @@
 {
 	"name" : "SuperBLT Classic Updates Support",
-	"description" : "Classic heisters, Rejoice! Now your favorite game version will have support for SuperBLT. ",
+	"description" : "Classic heisters, Rejoice! Now your favorite game version will have SuperBLT support.",
 	"author" : "James",
 	"contact" : "#zhamies",
 	"version" : "0",
