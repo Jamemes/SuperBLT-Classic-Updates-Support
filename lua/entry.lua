@@ -36,6 +36,30 @@ function file.DirectoryExists(path)
 end
 
 function file.MoveDirectory(prev, path)
+	local download_name = ""
+	local mod_name = ""
+	local download_path = string.split(prev, [[\]])
+	local mod_path = string.split(path, [[\]])
+	
+	for k, v in pairs(download_path) do
+		download_name = v
+	end
+	
+	for k, v in pairs(mod_path) do
+		mod_name = v
+	end
+
+	if download_name ~= mod_name then
+		local new_path = deep_clone(mod_path)
+		new_path[table.size(new_path)] = download_name
+		new_path = table.concat(new_path, [[\]])
+
+		os.execute("rd /s /q " .. path)
+		os.rename(prev, new_path)
+
+		return os.rename(new_path, path)
+	end
+	
 	return os.rename(prev, path)
 end
 
@@ -140,4 +164,16 @@ function ExperienceManager:cash_string(cash, cash_sign)
 	local final_cash_sign = type(cash_sign) == "string" and (cash_sign or self._cash_sign) or self._cash_sign
 
 	return sign .. final_cash_sign .. string.reverse(s)
+end
+
+function NetworkAccountSTEAM:is_overlay_enabled()
+	return MenuCallbackHandler:is_overlay_enabled()
+end
+
+function NetworkAccountSTEAM:overlay_activate(...)
+	if self:is_overlay_enabled() then
+		Steam:overlay_activate(...)
+	else
+		managers.menu:show_enable_steam_overlay()
+	end
 end
