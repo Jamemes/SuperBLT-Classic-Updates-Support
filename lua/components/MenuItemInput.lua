@@ -10,6 +10,15 @@ function MenuInput:set_back_enabled(enabled)
 	self._back_disabled = not enabled
 end
 
+local data = MenuInput.back
+function MenuInput:back(...)
+	if self._back_disabled then
+		return
+	end
+	
+	data(self, ...)
+end
+
 if not MenuItemInput then
 	MenuItemInput = MenuItemInput or class(CoreMenuItem.Item)
 	MenuItemInput.TYPE = "input"
