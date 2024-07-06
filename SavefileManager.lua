@@ -1,9 +1,10 @@
-SavefileManager.SETTING_SLOT = 2
-SavefileManager._slots_per_version = {
+local reserved = {
 	["1.6.2"] = 11,
 	["1.15.1"] = 37,
 }
 
+SavefileManager.SETTING_SLOT = 2
+SavefileManager._slots_per_version = {}
 SavefileManager._forbidden_slots = {
 	["98"] = "PAYDAY 2 Vanilla",
 	["77"] = "Restoration mod",
@@ -12,18 +13,41 @@ SavefileManager._forbidden_slots = {
 	["21"] = "Eclipse",
 }
 
-local function load_progress_slot()
-	local file, err = io.open("PROGRESS_SLOT.txt", "r")
-	
+function SavefileManager:save_progress_slots(tbl)
+	local file, err = io.open("PROGRESS_SLOT.txt", "w")
 	if not file then
 		io.stderr:write(err .. "\n")
-		local version_slot = SavefileManager._slots_per_version[tostring(Application:version())]
+		return
+	end
+
+	for k, v in pairs(tbl) do
+		file:write(k .. " " .. v .. "\n")
+	end
+	
+	file:close()
+end
+
+			
+local function load_progress_slot()
+	local file, err = io.open("PROGRESS_SLOT.txt", "r")
+	local function set_slots()
+		local version_slot = reserved[tostring(Application:version())]
 		if version_slot then
 			SavefileManager.PROGRESS_SLOT = version_slot
 			SavefileManager.BACKUP_SLOT = version_slot
 		else
 			SavefileManager.PROGRESS_SLOT = 69
 			SavefileManager.BACKUP_SLOT = 69
+		end
+	end
+	
+	if not file then
+		io.stderr:write(err .. "\n")
+		set_slots()
+		
+		if not SavefileManager._slots_per_version[tostring(Application:version())] then		
+			SavefileManager._slots_per_version[tostring(Application:version())] = SavefileManager.PROGRESS_SLOT
+			SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 		end
 		
 		return
@@ -50,8 +74,12 @@ local function load_progress_slot()
 	end
 	
 	if SavefileManager._forbidden_slots[tostring(SavefileManager.PROGRESS_SLOT)] then
-		SavefileManager.PROGRESS_SLOT = 69
-		SavefileManager.BACKUP_SLOT = 69
+		set_slots()
+	end
+	
+	if not SavefileManager._slots_per_version[tostring(Application:version())] then		
+		SavefileManager._slots_per_version[tostring(Application:version())] = SavefileManager.PROGRESS_SLOT
+		SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 	end
 end
 
@@ -60,6 +88,7 @@ load_progress_slot()
 -- pre-U27 save file fix
 if SavefileManager._meta_data_slot_detected_done_callback then
 	function SavefileManager:_meta_data_slot_detected_done_callback()
+		self._loading_sequence = true
 		print("SavefileManager:_meta_data_slot_detected_done_callback", self._has_meta_list)
 		if not self._has_meta_list then
 			print(" HAD NO SAVE GAMES")

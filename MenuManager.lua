@@ -1,10 +1,13 @@
 Hooks:Add("LocalizationManagerPostInit", "progress_slot_changer_loc", function(...)
 	LocalizationManager:add_localized_strings({
+		menu_PROGRESS_SLOT_help = tostring(Application:version()),
 		menu_PROGRESS_SLOT = "Progress Slot",
 		menu_slot_change = "Change Progress Slot",
 		menu_slot_change_text = "In the order to change the progress slot you need to restart the game. Continue?",
 		menu_slot_is_forbidden_text = "This slot is used by current version of the game or gameplay overhauls.",
 		menu_game_restart = "Restart the game",
+		dialog_check_press_any_key_stuck = "Incompatibility of the save file",
+		dialog_check_press_any_key_stuck_desc = "If you see this message, then most likely your save file is incompatible with this version of the game.\nIf you click 'Yes', you can enter the main menu despite the error, but then the game may encounter bugs that will cause errors or crashes that interfere with the game.\nTo fix this, you need to change the save file in the game settings in the 'Progress Slot' item, type the number of the desired slot or click 'Quit' and type it in the file 'PROGRESS_SLOT.txt' after game version numbers - ".. tostring(Application:version()) .. ".\n\nWhat you choose?",
 	})
 
 	if Idstring("russian"):key() == SystemInfo:language():key() then
@@ -14,6 +17,8 @@ Hooks:Add("LocalizationManagerPostInit", "progress_slot_changer_loc", function(.
 			menu_slot_change_text = "Чтобы изменить слот прогресса вам нужно перезапустить игру. Продолжить?",
 			menu_slot_is_forbidden_text = "Этот слот используется актуальной версией игры или модификациями.",
 			menu_game_restart = "Перезапустить игру",
+			dialog_check_press_any_key_stuck = "Несовместимость файла сохренения",
+			dialog_check_press_any_key_stuck_desc = "Если вы видите это сообщение, то скорее всего ваш файл сохренений несовместим с данной версией игры.\nЕсли вы нажмете 'Да', вы можете войти в главное меню не смотря на ошибку, но тогда в игре могут встретятся баги, которые будут вызывать ошибки или вылеты мешающие играть.\nЧтобы исправить это вам нужно сменить файл сохранения в настройках игры в пункте 'Слот прогресса' прописать номер нужного слота или нажать 'Выйти' и прописать в файле 'PROGRESS_SLOT.txt' вручную в строке после обозначения версии игры - ".. tostring(Application:version()) .. ".\n\n Что вы выбераете?",
 		})
 	end
 end)
@@ -27,6 +32,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_PROGRESS_SLOT_input", function(me
 		local params = {
 			name = "PROGRESS_SLOT",
 			text_id = "menu_PROGRESS_SLOT",
+			help_id = "menu_PROGRESS_SLOT_help",
 			empty_gui_input_limit = 28,
 			input_limit = 2,
 			callback = "change_PROGRESS_SLOT_call"
@@ -51,20 +57,6 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_PROGRESS_SLOT_input", function(me
 	end
 end)
 
-local function save_progress_slots(tbl)
-	local file, err = io.open("PROGRESS_SLOT.txt", "w")
-	if not file then
-		io.stderr:write(err .. "\n")
-		return
-	end
-
-	for k, v in pairs(tbl) do
-		file:write(k .. " " .. v .. "\n")
-	end
-	
-	file:close()
-end
-
 function MenuCallbackHandler:change_PROGRESS_SLOT_call(item)
 	if not item._editing then
 		item._input_text = item._input_text:gsub('%D', "")
@@ -86,8 +78,7 @@ function MenuCallbackHandler:change_PROGRESS_SLOT_call(item)
 			yes_button.text = managers.localization:text("menu_game_restart")
 			yes_button.callback_func = function()
 				SavefileManager._slots_per_version[tostring(Application:version())] = item._input_text
-				PrintTable(SavefileManager._slots_per_version)
-				save_progress_slots(SavefileManager._slots_per_version)
+				SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 				setup:quit()
 			end
 			local no_button = {}

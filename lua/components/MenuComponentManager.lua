@@ -1,3 +1,7 @@
+if MenuComponentManager.run_on_all_live_components then
+	return
+end
+
 Hooks:PreHook(MenuComponentManager, "init", "_alive_components_adder", function(self)
 	self._alive_components = {}
 end)
