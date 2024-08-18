@@ -1,4 +1,4 @@
-if not ExtendedPanel then
+if ExtendedPanel then
 	return
 end
 
