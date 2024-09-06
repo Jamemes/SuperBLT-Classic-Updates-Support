@@ -107,7 +107,7 @@ function MenuGuiComponentGeneric:init(ws, fullscreen_ws, node)
 
 	self._node = node
 	self.make_fine_text = BlackMarketGui.make_fine_text
-	self._rec_round_object = NewSkillTreeGui._rec_round_object
+	self._rec_round_object = SkillTreeGui._rec_round_object
 	self._tabs = {}
 	self._tabs_data = {}
 
