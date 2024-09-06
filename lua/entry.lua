@@ -27,45 +27,46 @@ function BLTKeybind:Key()
 	return data(self) or ""
 end
 
-function BLTDownloadManager:start_download(update)
-	-- Check if the download already going
-	if self:get_download(update) then
-		BLT:Log(LogLevel.INFO, string.format("[Downloads] Download already exists for %s (%s)", update:GetName(), update:GetParentMod():GetName()))
-		return false
+function file.FileExists(path)
+	return os.rename(path, path)
+end
+
+function file.DirectoryExists(path)
+	return os.rename(path, path)
+end
+
+function file.MoveDirectory(prev, path)
+	local download_name = ""
+	local mod_name = ""
+	local download_path = string.split(prev, [[\]])
+	local mod_path = string.split(path, [[\]])
+	
+	for k, v in pairs(download_path) do
+		download_name = v
+	end
+	
+	for k, v in pairs(mod_path) do
+		mod_name = v
 	end
 
-	-- If there is a .git or .hg file at the root of the mod, don't update it
-	-- the dev has most likely misclicked, so let's not wipe their work
-	local moddir = Application:nice_path(update:GetInstallDirectory() .. "/" .. update:GetInstallFolder(), true)
-	if SystemFS:exists(moddir .. ".hg") or SystemFS:exists(moddir .. ".git") then
-		QuickMenu:new(
-			"Update Blocked", -- TODO i18n
-			"Mercerial or Git version control are in use for this mod, update blocked", -- TODO i18n
-			{},
-			true
-		)
-		return false
+	if download_name ~= mod_name then
+		local new_path = deep_clone(mod_path)
+		new_path[table.size(new_path)] = download_name
+		new_path = table.concat(new_path, [[\]])
+
+		os.execute("rd /s /q " .. path)
+		os.rename(prev, new_path)
+
+		return os.rename(new_path, path)
 	end
+	
+	return os.rename(prev, path)
+end
 
-	-- Check if this update is allowed to be updated by the download manager
-	if update:DisallowsUpdate() then
-		MenuCallbackHandler[update:GetDisallowCallback()](MenuCallbackHandler, update)
-		return false
-	end
-
-	-- Start the download
-	local url = update:GetDownloadURL()
-	local http_id = dohttpreq(url, callback(self, self, "clbk_download_finished"), callback(self, self, "clbk_download_progress"))
-
-	-- Cache the download for access
-	local download = {
-		update = update,
-		http_id = http_id,
-		state = "waiting"
-	}
-	table.insert(self._downloads, download)
-
-	return true
+local data = unzip
+unzip = function(path1, path2)
+	os.execute("mkdir " .. path2)
+	data(path1, path2)
 end
 
 local data = dohttpreq
@@ -75,10 +76,10 @@ dohttpreq = function(path, func)
 		if not params[3] then
 			params[3] = {querySucceeded = true}
 		end
-
+		
 		return func(params[1], params[2], params[3])
 	end
-
+	
 	return data(path, override)
 end
 
