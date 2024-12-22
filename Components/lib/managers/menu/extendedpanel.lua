@@ -1,7 +1,3 @@
-if ExtendedPanel then
-	return
-end
-
 local function redirect_to_member(class, member_name, functions)
 	for _, name in pairs(functions) do
 		class[name] = function (self, ...)

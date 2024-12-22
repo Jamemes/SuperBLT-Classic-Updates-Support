@@ -1,6 +1,7 @@
 local reserved = {
 	["1.6.2"] = 11,
 	["1.15.1"] = 37,
+	["1.37.1"] = 76,
 }
 
 SavefileManager.SETTING_SLOT = 2

@@ -1,3 +1,13 @@
+require("lib/managers/menu/items/MenuItemInput")
+require("lib/managers/menu/ExtendedUiElemets")
+require("lib/managers/hud/HudChallengeNotification")
+require("lib/managers/menu/MenuInitiatorBase")
+require("lib/managers/menu/MenuGuiComponent")
+require("lib/managers/menu/MenuGuiComponentGeneric")
+require("lib/managers/menu/MultiProfileItemGui")
+require("lib/managers/menu/NewHeistsGui")
+require("lib/managers/menu/SearchBoxGuiObject")
+
 if MenuComponentManager.run_on_all_live_components then
 	return
 end

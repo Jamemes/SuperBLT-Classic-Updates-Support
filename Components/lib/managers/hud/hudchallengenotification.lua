@@ -1,7 +1,3 @@
-if HudChallengeNotification then
-	return
-end
-
 local massive_font = tweak_data.menu.pd2_massive_font
 local large_font = tweak_data.menu.pd2_large_font
 local medium_font = tweak_data.menu.pd2_medium_font
@@ -173,7 +169,7 @@ function HudChallengeNotification.queue(title, text, icon, rewards, queue)
 	end
 end
 
-function HudChallengeNotification:init(title, text, icon, rewards, queue)
+function HudChallengeNotification:init(title, text, icon, rewards, queue, wait)
 	if _G.IS_VR then
 		HudChallengeNotification.super.init(self, managers.hud:prompt_panel())
 	else
@@ -281,7 +277,7 @@ function HudChallengeNotification:init(title, text, icon, rewards, queue)
 	self._box:set_visible(false)
 	self._box_bg:animate(animate_open, function ()
 		self._box:set_visible(true)
-		wait_global(2)
+		wait_global(wait or 2)
 		self._box:set_visible(false)
 		self._box_bg:animate(animate_close, function ()
 			self:close()

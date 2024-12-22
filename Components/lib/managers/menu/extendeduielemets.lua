@@ -1,6 +1,6 @@
-if not ExtendedPanel or GrowPanel then
-	return
-end
+require("lib/managers/menu/ExtendedPanel")
+require("lib/managers/menu/UiPlacer")
+require("lib/managers/menu/ScrollablePanel")
 
 local massive_font = tweak_data.menu.pd2_massive_font
 local large_font = tweak_data.menu.pd2_large_font

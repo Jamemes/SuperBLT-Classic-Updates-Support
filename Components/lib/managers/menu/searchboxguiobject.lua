@@ -1,7 +1,3 @@
-if SearchBoxGuiObject then
-	return
-end
-	
 local medium_font = tweak_data.menu.pd2_medium_font
 local medium_font_size = tweak_data.menu.pd2_medium_font_size
 SearchBoxGuiObject = SearchBoxGuiObject or class()

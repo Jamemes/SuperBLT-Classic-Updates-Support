@@ -1,7 +1,3 @@
-if MenuInitiatorBase then
-	return
-end
-
 MenuInitiatorBase = MenuInitiatorBase or class()
 
 function MenuInitiatorBase:modify_node(original_node, data)

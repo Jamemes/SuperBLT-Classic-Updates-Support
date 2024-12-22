@@ -1,7 +1,3 @@
-if MenuGuiComponent then
-	return
-end
-
 local massive_font = tweak_data.menu.pd2_massive_font
 local large_font = tweak_data.menu.pd2_large_font
 local medium_font = tweak_data.menu.pd2_medium_font
@@ -17,81 +13,6 @@ local BOT_ADJUSTMENT = NOT_WIN_32 and 60 or 60
 local PAGE_TAB_H = medium_font_size + 10
 local WIDTH_MULTIPLIER = NOT_WIN_32 and 0.68 or 0.71
 local BOX_GAP = 13.5
-
-MenuGuiComponent = MenuGuiComponent or class()
-
-function MenuGuiComponent:init(...)
-end
-
-function MenuGuiComponent:close(...)
-end
-
-function MenuGuiComponent:refresh()
-end
-
-function MenuGuiComponent:update(t, dt)
-end
-
-function MenuGuiComponent:accept_input(accept)
-end
-
-function MenuGuiComponent:input_focus()
-end
-
-function MenuGuiComponent:scroll_up()
-end
-
-function MenuGuiComponent:scroll_down()
-end
-
-function MenuGuiComponent:move_up()
-end
-
-function MenuGuiComponent:move_down()
-end
-
-function MenuGuiComponent:move_left()
-end
-
-function MenuGuiComponent:move_right()
-end
-
-function MenuGuiComponent:next_page()
-end
-
-function MenuGuiComponent:previous_page()
-end
-
-function MenuGuiComponent:confirm_pressed()
-end
-
-function MenuGuiComponent:back_pressed()
-end
-
-function MenuGuiComponent:special_btn_pressed(...)
-end
-
-function MenuGuiComponent:mouse_pressed(o, button, x, y)
-end
-
-function MenuGuiComponent:mouse_released(o, button, x, y)
-end
-
-function MenuGuiComponent:mouse_wheel_up(x, y)
-end
-
-function MenuGuiComponent:mouse_wheel_down(x, y)
-end
-
-function MenuGuiComponent:mouse_clicked(o, button, x, y)
-end
-
-function MenuGuiComponent:mouse_double_click(o, button, x, y)
-end
-
-function MenuGuiComponent:mouse_moved(o, x, y)
-end
-
 MenuGuiComponentGeneric = MenuGuiComponentGeneric or class(MenuGuiComponent)
 
 function MenuGuiComponentGeneric:init(ws, fullscreen_ws, node)
@@ -107,7 +28,7 @@ function MenuGuiComponentGeneric:init(ws, fullscreen_ws, node)
 
 	self._node = node
 	self.make_fine_text = BlackMarketGui.make_fine_text
-	self._rec_round_object = SkillTreeGui._rec_round_object
+	self._rec_round_object = NewSkillTreeGui._rec_round_object
 	self._tabs = {}
 	self._tabs_data = {}
 

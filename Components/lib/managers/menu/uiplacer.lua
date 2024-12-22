@@ -1,7 +1,3 @@
-if UiPlacer then
-	return
-end
-	
 UiPlacer = UiPlacer or class()
 
 function UiPlacer:init(x, y, padding_x, padding_y)

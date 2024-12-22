@@ -1,11 +1,3 @@
-if MultiProfileItemGui then
-	return
-end
-
-function MenuManager:is_steam_controller()
-	return self:active_menu() and self:active_menu().input and self:active_menu().input._controller and self:active_menu().input._controller.TYPE == "steam" or managers.controller:get_default_wrapper_type() == "steam"
-end
-
 MultiProfileItemGui = MultiProfileItemGui or class()
 MultiProfileItemGui.quick_panel_w = 36
 MultiProfileItemGui.quick_panel_h = 36

@@ -1,7 +1,3 @@
-if ScrollablePanel then
-	return
-end
-
 ScrollablePanel = ScrollablePanel or class()
 local PANEL_PADDING = 10
 local FADEOUT_SPEED = 5
