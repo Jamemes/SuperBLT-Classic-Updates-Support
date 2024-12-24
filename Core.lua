@@ -1,4 +1,14 @@
 local SBLT_CUS_path = ModPath
+
+function version_number()
+	local ver = Application:version()
+	if ver == "Tournament" then
+		ver = "1.54.12"
+	end
+	
+	return tonumber(ver:sub(3, #ver))
+end
+
 local components_directories = {}
 local required_folder = SBLT_CUS_path .. "Components/"
 function collect_files_pathes(path, previous)
@@ -36,25 +46,33 @@ function require(...)
 	return req(...)
 end
 
-local function change_lines(path, problems, replacement)
+local function change_lines(path, problems)
 	local file = io.open(path, 'r')
 	if not file or not problems or not #problems == 0 then
 		return
 	end
 	
+	local tag = "SBLT_CUS crash fix"
 	local changes = false
 	local strings = {}
 	for line in file:lines() do
 		for _, problem in pairs(problems) do
-			if not problem.cause then
-				if not replacement then
-					if string.find(line, problem.str) and not string.find(line, [[causes crashes]]) then
-						line = "--causes crashes" .. line
+			if string.find(line, problem.str) then
+				if string.find(path, ".lua") then
+					if not problem.cause and not string.find(line, tag) then
+						line = '--' .. tag .. ' ' .. line
+						changes = true
+					elseif problem.cause and string.find(line, tag) then
+						line = line:gsub('--' .. tag .. ' ', "")
 						changes = true
 					end
-				else
-					if string.find(line, problem.str) then
-						line = line:gsub(problem.str, replacement)
+				elseif string.find(path, ".xml") then
+					log(string.find(line, tag))
+					if not problem.cause and not string.find(line, tag) then
+						line = '<!--' .. tag ..  ' ' .. line .. ' -->'
+						changes = true
+					elseif problem.cause and string.find(line, tag) then
+						line = line:sub(#tag + 6, #line - 4)
 						changes = true
 					end
 				end
@@ -76,10 +94,11 @@ end
 
 local function fix_beardlib(path)
 	local todo = {}
+	
 	todo["Classes/Managers/FileManager.lua"] = {
 		{
 			str = 'Application:reload_textures',
-			cause = Application.reload_textures
+			cause = version_number() >= 54.7
 		},
 		{
 			str = 'blt.wren_io',
@@ -90,14 +109,42 @@ local function fix_beardlib(path)
 	todo["Classes/Frameworks.lua"] = {
 		{
 			str = 'self:FindAlreadyOverriden()',
-			cause = DB.mods
+			cause = version_number() >= 16.5
 		}
 	}
-	
+
 	todo["Hooks/Items/PlayerStyleGloveHooks.lua"] = {
 		{
 			str = '',
-			cause = false -- change
+			cause = version_number() >= 95.894
+		}
+	}
+
+	todo["Hooks/Items/NetworkPeer.lua"] = {
+		{
+			str = 'self:beardlib_reload_outfit()',
+			cause = version_number() >= 93.844
+		}
+	}
+
+	todo["Hooks/Items/NetworkHooks.lua"] = {
+		{
+			str = 'peer:beardlib_reload_outfit()',
+			cause = version_number() >= 93.844
+		}
+	}
+	
+	todo["Hooks/Items/NetworkHooks.lua"] = {
+		{
+			str = 'peer:beardlib_reload_outfit()',
+			cause = version_number() >= 93.844
+		}
+	}
+	
+	todo["main.xml"] = {
+		{
+			str = '<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>',
+			cause = false --need to find out which version doesn't crash with this
 		}
 	}
 
