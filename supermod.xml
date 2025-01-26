@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<mod name="SBLT_CUS">
+	<assets base_path="Assets/">
+		<file name="guis/dlcs/cee/textures/pd2/crime_spree/boosts_atlas.texture"/>
+		<file name="guis/textures/menu_ui_icons.dds"/>
+		<file name="guis/textures/beardlib_logo.dds"/>
+		<file name="guis/textures/achievement_trophy_white.dds"/>
+		<file name="guis/textures/achievement_package_default.dds"/>
+		<file name="guis/textures/checkmark.dds"/>
+	</assets>
+</mod>

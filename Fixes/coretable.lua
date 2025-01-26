@@ -25,3 +25,15 @@ function table.list_to_set(list)
 
 	return rtn
 end
+
+function table.remove_condition(t, func)
+	local i = 1
+
+	while next(t) and i <= #t do
+		if func(t[i]) then
+			table.remove(t, i)
+		else
+			i = i + 1
+		end
+	end
+end
