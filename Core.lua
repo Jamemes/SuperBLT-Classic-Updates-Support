@@ -63,7 +63,6 @@ local function change_lines(path, problems)
 	for _, problem in pairs(problems) do
 		problem.fix = problem.fix:gsub("%p", function(s) return '%' .. s end)
 		problem.issue = problem.issue:gsub("%p", function(s) return '%' .. s end)
-
 		if not problem.cause and not str_file:find(problem.fix) then
 			str_file = str_file:gsub(problem.issue, problem.fix)
 			changes = true
@@ -73,7 +72,6 @@ local function change_lines(path, problems)
 		end
 	end
 
-	-- SaveTable(str_file, "lox.txt")
 	if changes then
 		file = io.open(path, 'w')
 		file:write(str_file)
@@ -90,6 +88,54 @@ local function fix_sblt(path)
 			cause = version_number() >= 54.7
 		}
 	}
+
+	todo["lua/SystemMenuManager.lua"] = {
+		{
+			issue = 'require',
+			fix = '-- require',
+			cause = version_number() >= 16.1
+		}
+	}
+
+	todo["req/BLTKeybindsManager.lua"] = {
+		{
+			issue = 'self._key.pc',
+			fix = 'self._key.pc or ""',
+			cause = false --I need to find out which version it's fixed in.
+		}
+	}
+	
+	todo["req/ui/BLTNotificationsGui.lua"] = {
+		{
+			issue = 'local page_button = self._buttons_panel:bitmap({',
+			fix = [[local page_button = self._buttons_panel:bitmap({
+			alpha = 0,]],
+			cause = DB:has(Idstring("texture"), Idstring("guis/textures/pd2/ad_spot"))
+		},
+		{
+			issue = 'managers.experience:cash_string(pending_downloads_count, "")',
+			fix = 'managers.experience:cash_string(pending_downloads_count, ""):gsub("%$", "")',
+			cause = version_number() >= 74.278
+		}
+	}
+	
+	todo["req/ui/BLTModsGui.lua"] = {
+		{
+			issue = 'title = title_text',
+			fix = 'title = title_text:gsub("%$", "")',
+			cause = version_number() >= 74.278
+		}
+	}
+
+	todo["req/BLTUpdate.lua"] = {
+		{
+			issue = [[if managers.network and managers.network.account and managers.network.account:is_overlay_enabled() then
+		managers.network.account:overlay_activate("url", url)]],
+			fix = [[if managers.network and managers.network.account and Steam.overlay_activate then
+		Steam:overlay_activate("url", url)]],
+			cause = version_number() >= 139.193
+		}
+	}
 	
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
@@ -101,9 +147,13 @@ local function fix_beardlib(path)
 	
 	todo["main.xml"] = {
 		{
-			issue = '<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>',
-			fix = '<!-- <unit path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->',
-			cause = false --need to find out which version doesn't crash with this
+			issue = [[<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+				<object path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+				<sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/>]],
+			fix = [[<!-- <unit path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+				<!-- <object path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+				<!-- <sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->]],
+			cause = false --I need to find out which version it's fixed in.
 		}
 	}
 
@@ -207,6 +257,22 @@ local function fix_beardlib(path)
 			fix = [[KillzoneManager.type_upd_funcs = {}
 	KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)]],
 			cause = version_number() >= 136.173
+		}
+	}
+
+	todo["Hooks/Items/Hooks.lua"] = {
+		{
+			issue = 'self.weapon_charms',
+			fix = '-- self.weapon_charms',
+			cause = version_number() >= 110.41
+		}
+	}
+
+	todo["Hooks/Music/Hooks.lua"] = {
+		{
+			issue = 'local F',
+			fix = '-- local F',
+			cause = version_number() >= 14.0
 		}
 	}
 

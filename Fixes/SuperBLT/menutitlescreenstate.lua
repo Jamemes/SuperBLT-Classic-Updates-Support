@@ -1,3 +1,4 @@
+-- SaveFile fixer
 local data = MenuTitlescreenState.get_start_pressed_controller_index
 function MenuTitlescreenState:get_start_pressed_controller_index()
 	local button = data(self)

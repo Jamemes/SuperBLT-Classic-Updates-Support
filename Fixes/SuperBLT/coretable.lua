@@ -10,12 +10,6 @@ function table.map_append(t, ...)
 	return t
 end
 
-function table.set(...)
-	return table.list_to_set({
-		...
-	})
-end
-
 function table.list_to_set(list)
 	local rtn = {}
 
