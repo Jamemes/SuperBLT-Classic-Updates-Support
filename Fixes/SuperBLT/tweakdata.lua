@@ -37,3 +37,6 @@ tweak_data.hud_icons.csb_throwables = {
 		36
 	}
 }
+if not tweak_data.BUNDLED_DLC_PACKAGES then
+	tweak_data.BUNDLED_DLC_PACKAGES = {}
+end

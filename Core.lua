@@ -275,17 +275,46 @@ local function fix_beardlib(path)
 			cause = version_number() >= 14.0
 		}
 	}
+	
+	todo["Classes/Utils/FileIO.lua"] = {
+		{
+			issue = 'function FileIO:GetFiles(path)',
+			fix = [[function FileIO:GetFiles(path)
+	if not file.DirectoryExists(path) then
+		return {}
+	end
+]],
+			cause = false --I need to find out which version it's fixed in.
+		}
+	}
 
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
 end
 
+
+-- local function fix_beardlib_editor(path)
+	-- local todo = {}
+	-- todo["req/BLTMod.lua"] = {
+		-- {
+			-- issue = 'self:GetPath() .. tostring(self.image_path)',
+			-- fix = 'self:GetPath() .. tostring(self.image_path:gsub(".png", ""))',
+			-- cause = version_number() >= 54.7
+		-- }
+	-- }
+	-- for file_path, tbl in pairs(todo) do
+		-- change_lines(path .. file_path, tbl)
+	-- end
+-- end
+
 for i, mod in ipairs(BLT.Mods:Mods()) do
 	if mod:GetName() == "SuperBLT" then
 		fix_sblt(mod:GetPath())
 	elseif mod:GetName() == "BeardLib" then
 		fix_beardlib(mod:GetPath())
+	-- elseif mod:GetName() == "BeardLib-Editor" then
+		-- fix_beardlib_editor(mod:GetPath())
 	end
 end
 
