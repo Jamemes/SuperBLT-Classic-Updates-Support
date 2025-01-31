@@ -96,14 +96,6 @@ local function fix_sblt(path)
 			cause = version_number() >= 16.1
 		}
 	}
-
-	todo["req/BLTKeybindsManager.lua"] = {
-		{
-			issue = 'self._key.pc',
-			fix = 'self._key.pc or ""',
-			cause = false --I need to find out which version it's fixed in.
-		}
-	}
 	
 	todo["req/ui/BLTNotificationsGui.lua"] = {
 		{
@@ -136,7 +128,15 @@ local function fix_sblt(path)
 			cause = version_number() >= 139.193
 		}
 	}
-	
+
+	todo["req/supermod/BLTSuperMod.lua"] = {
+		{
+			issue = 'local xml = blt.parsexml',
+			fix = 'local xml = blt and blt.parsexml',
+			cause = blt and blt.parsexml
+		}
+	}
+
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
@@ -183,6 +183,11 @@ local function fix_beardlib(path)
 			issue = 'BeardLibPackageManager.EXT_CONVERT = {dds = "texture", png = "texture", tga = "texture", jpg = "texture", bik = "movie"}',
 			fix = 'BeardLibPackageManager.EXT_CONVERT = {dds = "texture", png = "", tga = "", jpg = "", bik = "movie"}',
 			cause = version_number() >= 54.7
+		},
+		{
+			issue = 'if not DB.create_entry then',
+			fix = 'if not (DB and DB.create_entry) then',
+			cause = false --I need to find out which version it's fixed in.
 		}
 	}
 
@@ -285,6 +290,11 @@ local function fix_beardlib(path)
 	end
 ]],
 			cause = false --I need to find out which version it's fixed in.
+		},
+		{
+			issue = 'SystemFS:rename_file',
+			fix = 'os.rename',
+			cause = false --I need to find out which version it's fixed in.
 		}
 	}
 
@@ -293,28 +303,11 @@ local function fix_beardlib(path)
 	end
 end
 
-
--- local function fix_beardlib_editor(path)
-	-- local todo = {}
-	-- todo["req/BLTMod.lua"] = {
-		-- {
-			-- issue = 'self:GetPath() .. tostring(self.image_path)',
-			-- fix = 'self:GetPath() .. tostring(self.image_path:gsub(".png", ""))',
-			-- cause = version_number() >= 54.7
-		-- }
-	-- }
-	-- for file_path, tbl in pairs(todo) do
-		-- change_lines(path .. file_path, tbl)
-	-- end
--- end
-
 for i, mod in ipairs(BLT.Mods:Mods()) do
 	if mod:GetName() == "SuperBLT" then
 		fix_sblt(mod:GetPath())
 	elseif mod:GetName() == "BeardLib" then
 		fix_beardlib(mod:GetPath())
-	-- elseif mod:GetName() == "BeardLib-Editor" then
-		-- fix_beardlib_editor(mod:GetPath())
 	end
 end
 

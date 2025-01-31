@@ -22,10 +22,12 @@
 		{"hook_id" : "core/lib/system/coresystem",								"script_path" : "Core.lua"},
 	],
 	"hooks" : [
-		{"hook_id" : "lib/tweak_data/blackmarkettweakdata", 					"script_path" : "Fixes/Beardlib/blackmarkettweakdata.lua"},
-		{"hook_id" : "lib/managers/blackmarketmanager",							"script_path" : "Fixes/Beardlib/blackmarketmanager.lua"},
-		{"hook_id" : "lib/managers/musicmanager",								"script_path" : "Fixes/Beardlib/musicmanager.lua"},
+		{"hook_id" : "lib/tweak_data/blackmarkettweakdata", 					"script_path" : "Fixes/BeardLib/blackmarkettweakdata.lua"},
+		{"hook_id" : "lib/managers/blackmarketmanager",							"script_path" : "Fixes/BeardLib/blackmarketmanager.lua"},
+		{"hook_id" : "lib/managers/musicmanager",								"script_path" : "Fixes/BeardLib/musicmanager.lua"},
 		
+		{"hook_id" : "lib/managers/menu/items/menuitemcustomizecontroller", 	"script_path" : "Fixes/SuperBLT/menuitemcustomizecontroller.lua"},
+		{"hook_id" : "lib/managers/menu/textboxgui", 							"script_path" : "Fixes/SuperBLT/textboxgui.lua"},
 		{"hook_id" : "lib/managers/menu/boxguiobject", 							"script_path" : "Fixes/SuperBLT/boxguiobject.lua"},
 		{"hook_id" : "core/lib/managers/menu/items/coremenuitemslider", 		"script_path" : "Fixes/SuperBLT/coremenuitemslider.lua"},
 		{"hook_id" : "core/lib/managers/menu/items/coremenuitemtoggle",			"script_path" : "Fixes/SuperBLT/coremenuitemtoggle.lua"},
