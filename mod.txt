@@ -27,6 +27,7 @@
 		{"hook_id" : "lib/managers/musicmanager",								"script_path" : "Fixes/BeardLib/musicmanager.lua"},
 		
 		{"hook_id" : "lib/managers/menu/items/menuitemcustomizecontroller", 	"script_path" : "Fixes/SuperBLT/menuitemcustomizecontroller.lua"},
+		{"hook_id" : "lib/managers/menu/textboxgui", 							"script_path" : "Fixes/SuperBLT/textboxgui.lua"},
 		{"hook_id" : "lib/managers/menu/boxguiobject", 							"script_path" : "Fixes/SuperBLT/boxguiobject.lua"},
 		{"hook_id" : "core/lib/managers/menu/items/coremenuitemslider", 		"script_path" : "Fixes/SuperBLT/coremenuitemslider.lua"},
 		{"hook_id" : "core/lib/managers/menu/items/coremenuitemtoggle",			"script_path" : "Fixes/SuperBLT/coremenuitemtoggle.lua"},
