@@ -328,17 +328,17 @@ for i, mod in ipairs(BLT.Mods:Mods()) do
 	end
 end
 
-if not file.FileExists then
+-- if not file.FileExists then
 	function file.FileExists(path)
 		return os.rename(path, path)
 	end
-end
+-- end
 
-if not file.DirectoryExists then
+-- if not file.DirectoryExists then
 	function file.DirectoryExists(path)
 		return os.rename(path, path)
 	end
-end
+-- end
 
 if not file.MoveDirectory then
 	function file.MoveDirectory(prev, path)
