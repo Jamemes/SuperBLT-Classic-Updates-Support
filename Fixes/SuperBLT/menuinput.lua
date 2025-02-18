@@ -156,6 +156,13 @@ function MenuInput:mouse_pressed(o, button, x, y)
 	if managers.menu:active_menu().renderer:mouse_pressed(o, button, x, y) then
 		return
 	end
+	
+	if not self._callback_map then
+		self._callback_map = {}
+		if not self._callback_map.mouse_pressed then
+			self._callback_map.mouse_pressed = {}
+		end
+	end
 
 	for i, clbk in pairs(self._callback_map.mouse_pressed) do
 		clbk(o, button, x, y)

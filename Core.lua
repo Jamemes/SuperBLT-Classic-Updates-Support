@@ -154,6 +154,55 @@ local function fix_sblt(path)
 		}
 	}
 
+	todo["req/xaudio/XAudio.lua"] = {
+		{
+			issue = 'blt',
+			fix = '--blt',
+			cause = blt
+		}
+	}
+
+	todo["req/ui/BLTNotificationsGui.lua"] = {
+		{
+			issue = [[self._downloads_panel =self._panel:panel({
+		name = "downloads",
+		w = 48,
+		h = 48,
+		layer = 100
+	})
+
+	local texture, rect = tweak_data.hud_icons:get_icon_data("csb_throwables")
+	self._downloads_panel:bitmap({
+		texture = texture,
+		texture_rect = rect,
+		w = self._downloads_panel:w(),
+		h = self._downloads_panel:h(),
+		color = Color.red
+	})
+	self._downloads_panel:rect({
+		x = 38 / 2.5 - 2,
+		y = 28 / 2.5,
+		w = 54 / 2.5,
+		h = 72 / 2.5 - 2,
+		color = Color.red
+	})]],
+			fix = [[self._downloads_panel =self._panel:panel({
+		name = "downloads",
+		w = 38,
+		h = 38,
+		layer = 100
+	})
+
+	self._downloads_panel:bitmap({
+		texture = "guis/textures/pd2/hud_progress_32px",
+		w = self._downloads_panel:w(),
+		h = self._downloads_panel:h(),
+		color = Color.red
+	})]],
+			cause = DB:has(Idstring("texture"), Idstring("guis/dlcs/cee/textures/pd2/crime_spree/boosts_atlas"))
+		}
+	}
+
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end

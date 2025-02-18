@@ -74,10 +74,12 @@ function ScrollablePanel:init(parent_panel, name, data)
 	end
 
 	local texture, rect = tweak_data.hud_icons:get_icon_data("scrollbar_arrow")
+	local old_arrows = texture == "guis/textures/menu_arrows"
 	local scroll_up_indicator_arrow = self:panel():bitmap({
 		name = "scroll_up_indicator_arrow",
 		halign = "right",
 		valign = "top",
+		rotation = old_arrows and 90 or 0,
 		alpha = 0,
 		texture = texture,
 		texture_rect = rect,
@@ -93,7 +95,7 @@ function ScrollablePanel:init(parent_panel, name, data)
 		valign = "bottom",
 		alpha = 0,
 		halign = "right",
-		rotation = 180,
+		rotation = old_arrows and 270 or 180,
 		texture = texture,
 		texture_rect = rect,
 		layer = layer,
