@@ -257,7 +257,7 @@ local function fix_beardlib(path)
 		{
 			issue = 'SystemFS:rename_file',
 			fix = 'os.rename',
-			cause = false --I need to find out which version it's fixed in.
+			cause = game_version(54.7)
 		}
 	}
 	
