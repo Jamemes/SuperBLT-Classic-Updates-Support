@@ -3,7 +3,7 @@
 	"description" : "Classic heisters, Rejoice! Now your favorite game version will have SuperBLT support.",
 	"author" : "James",
 	"contact" : "#zhamies",
-	"version" : "6",
+	"version" : "8",
 	"blt_version" : 2,
 	"priority" : 1002,
 	"image" : "blt.png",
@@ -22,8 +22,10 @@
 		{"hook_id" : "core/lib/system/coresystem",								"script_path" : "Core.lua"},
 	],
 	"hooks" : [
+		{"hook_id" : "core/lib/setups/coresetup",								"script_path" : "Fixes/BeardLib/coresetup.lua"},
+		{"hook_id" : "lib/managers/blackmarketmanager",							"script_path" : "Fixes/BeardLib/blackmarketmanager.lua"},
 		{"hook_id" : "lib/managers/musicmanager",								"script_path" : "Fixes/BeardLib/musicmanager.lua"},
-		
+		{"hook_id" : "lib/setups/setup",										"script_path" : "Fixes/BeardLib/setup.lua"},
 		{"hook_id" : "lib/managers/menu/items/menuitemcustomizecontroller", 	"script_path" : "Fixes/SuperBLT/menuitemcustomizecontroller.lua"},
 		{"hook_id" : "lib/managers/menu/textboxgui", 							"script_path" : "Fixes/SuperBLT/textboxgui.lua"},
 		{"hook_id" : "lib/managers/menu/boxguiobject", 							"script_path" : "Fixes/SuperBLT/boxguiobject.lua"},

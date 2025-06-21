@@ -149,7 +149,7 @@ HudChallengeNotification.ICON_SIZE = 80
 HudChallengeNotification.BOX_MAX_W = 400
 HudChallengeNotification.default_queue = HudChallengeNotification.default_queue or {}
 
-function HudChallengeNotification.queue(title, text, icon, rewards, queue)
+function HudChallengeNotification.queue(title, text, icon, rewards, wait, queue)
 	if Application:editor() then
 		return
 	end
@@ -161,6 +161,7 @@ function HudChallengeNotification.queue(title, text, icon, rewards, queue)
 		text,
 		icon,
 		rewards,
+		wait,
 		queue
 	})
 
@@ -169,7 +170,7 @@ function HudChallengeNotification.queue(title, text, icon, rewards, queue)
 	end
 end
 
-function HudChallengeNotification:init(title, text, icon, rewards, queue, wait)
+function HudChallengeNotification:init(title, text, icon, rewards, wait, queue)
 	if _G.IS_VR then
 		HudChallengeNotification.super.init(self, managers.hud:prompt_panel())
 	else

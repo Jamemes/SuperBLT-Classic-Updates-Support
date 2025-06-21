@@ -113,7 +113,7 @@ local function fix_sblt(path)
 			cause = game_version(16.1)
 		}
 	}
-	
+
 	todo["req/ui/BLTNotificationsGui.lua"] = {
 		{
 			issue = 'local page_button = self._buttons_panel:bitmap({',
@@ -127,7 +127,7 @@ local function fix_sblt(path)
 			cause = game_version(74.278)
 		}
 	}
-	
+
 	todo["req/ui/BLTModsGui.lua"] = {
 		{
 			issue = 'title = title_text',
@@ -154,6 +154,14 @@ local function fix_sblt(path)
 		}
 	}
 
+	todo["req/xaudio/XAudio.lua"] = {
+		{
+			issue = 'blt',
+			fix = '--blt',
+			cause = blt
+		}
+	}
+
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
@@ -162,16 +170,40 @@ end
 local function fix_beardlib(path)
 	local todo = {}
 	
-	todo["main.xml"] = {
+	todo["Hooks/Items/Hooks.lua"] = {
 		{
-			issue = [[<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>
-				<object path="core/units/run_sequence_dummy/run_sequence_dummy"/>
-				<sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/>]],
-			fix = [[<!-- <unit path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
-				<!-- <object path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
-				<!-- <sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->]],
-			cause = false --I need to find out which version it's fixed in.
+			issue = 'self.weapon_charms',
+			fix = '-- self.weapon_charms',
+			cause = game_version(110.41)
 		}
+	}
+	
+	todo["Hooks/Items/PlayerStyleGloveHooks.lua"] = {
+		{
+			issue = 'pairs(self.suit_default_gloves)',
+			fix = 'pairs(self.suit_default_gloves or {})',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'pairs(self.glove_adapter.player_style_exclude_list)',
+			fix = 'pairs(self.glove_adapter and self.glove_adapter.player_style_exclude_list or {})',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'tweak_data.blackmarket.gloves[glove_id]',
+			fix = 'tweak_data.blackmarket.gloves and tweak_data.blackmarket.gloves[glove_id]',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'local glowobal_bmm',
+			fix = '-- local glowobal_bmm',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'pairs(BTNS)',
+			fix = 'pairs({})',
+			cause = game_version(95.894)
+		},
 	}
 
 	todo["Classes/Frameworks.lua"] = {
@@ -194,60 +226,7 @@ local function fix_beardlib(path)
 			cause = blt and blt.wren_io
 		}
 	}
-
-	todo["Classes/Managers/PackageManager.lua"] = {
-		{
-			issue = 'BeardLibPackageManager.EXT_CONVERT = {dds = "texture", png = "texture", tga = "texture", jpg = "texture", bik = "movie"}',
-			fix = 'BeardLibPackageManager.EXT_CONVERT = {dds = "texture", png = "", tga = "", jpg = "", bik = "movie"}',
-			cause = game_version(54.7)
-		},
-		{
-			issue = 'if not DB.create_entry then',
-			fix = 'if not (DB and DB.create_entry) then',
-			cause = false --I need to find out which version it's fixed in.
-		}
-	}
-
-	todo["Classes/WeaponSkinExtension.lua"] = {
-		{
-			issue = 'require',
-			fix = '-- require',
-			cause = game_version(54.7)
-		}
-	}
-
-	todo["Hooks/Items/PlayerStyleGloveHooks.lua"] = {
-		{
-			issue = 'local F',
-			fix = '-- local F',
-			cause = game_version(95.894)
-		}
-	}
-
-	todo["Hooks/Items/NetworkPeer.lua"] = {
-		{
-			issue = 'self:beardlib_reload_outfit',
-			fix = '-- self:beardlib_reload_outfit',
-			cause = game_version(93.844)
-		}
-	}
-
-	todo["Hooks/Items/NetworkHooks.lua"] = {
-		{
-			issue = 'peer:beardlib_reload_outfit',
-			fix = '-- peer:beardlib_reload_outfit',
-			cause = game_version(93.844)
-		}
-	}
 	
-	todo["Modules/PD2/LevelModule.lua"] = {
-		{
-			issue = 'l_self.ai_groups[self._config.ai_group_type] or l_self.ai_groups.default',
-			fix = '"america"',
-			cause = game_version(50.0)
-		}
-	}
-
 	todo["Modules/PD2/NarrativeModule.lua"] = {
 		{
 			issue = 'narr_self.stages[stage.level_id] = stage',
@@ -262,39 +241,6 @@ local function fix_beardlib(path)
 						narr_self.stages[_stage.level_id] = _stage
 					end]],
 			cause = game_version(65.0)
-		}
-	}
-
-	todo["Hooks/Maps/NetworkHooks.lua"] = {
-		{
-			issue = 'managers.job:current_world_setting()',
-			fix = 'nil',
-			cause = game_version(12.1)
-		}
-	}
-
-	todo["Hooks/Maps/Hooks.lua"] = {
-		{
-			issue = 'KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)',
-			fix = [[KillzoneManager.type_upd_funcs = {}
-	KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)]],
-			cause = game_version(136.173)
-		}
-	}
-
-	todo["Hooks/Items/Hooks.lua"] = {
-		{
-			issue = 'self.weapon_charms',
-			fix = '-- self.weapon_charms',
-			cause = game_version(110.41)
-		}
-	}
-
-	todo["Hooks/Music/Hooks.lua"] = {
-		{
-			issue = 'local F',
-			fix = '-- local F',
-			cause = game_version(14.0)
 		}
 	}
 	
@@ -314,7 +260,117 @@ local function fix_beardlib(path)
 			cause = false --I need to find out which version it's fixed in.
 		}
 	}
+	
+	todo["Hooks/Items/NetworkPeer.lua"] = {
+		{
+			issue = 'if bm.player_styles[new_outfit.player_style] and',
+			fix = 'if bm.player_styles and bm.player_styles[new_outfit.player_style] and',
+			cause = game_version(93.844)
+		},
+		{
+			issue = 'if bm.gloves[new_outfit.glove_id] and',
+			fix = 'if bm.gloves and bm.gloves[new_outfit.glove_id] and',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'and not setup:is_unloading()',
+			fix = '-- and not setup:is_unloading()',
+			cause = game_version(16.1)
+		},
+		{
+			issue = 'scene:set_character_armor_skin',
+			fix = '-- scene:set_character_armor_skin',
+			cause = game_version(68.193)
+		},
+		{
+			issue = 'scene:set_character_player_style',
+			fix = '-- scene:set_character_player_style',
+			cause = game_version(93.844)
+		},
+		{
+			issue = 'scene:set_character_gloves',
+			fix = '-- scene:set_character_gloves',
+			cause = game_version(95.894)
+		},
+		{
+			issue = [[if managers.menu_component then
+        managers.menu_component:peer_outfit_updated(self:id())
+    end]],
+			fix = [[--if managers.menu_component then
+        --managers.menu_component:peer_outfit_updated(self:id())
+    --end]],
+			cause = game_version(46.3)
+		},
+		{
+			issue = 'self._profile.outfit_string = SyncUtils:OutfitStringFromList(old_outfit)',
+			fix = '-- self._profile.outfit_string = SyncUtils:OutfitStringFromList(old_outfit)',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'scene:_select_lobby_character_pose',
+			fix = '-- scene:_select_lobby_character_pose',
+			cause = game_version(40.0)
+		},
+		
+	}
 
+	todo["Classes/Utils/Sync.lua"] = {
+		{
+			issue = 'local grenade_tweak = tweak_data.blackmarket.projectiles[grenade]',
+			fix = 'local grenade_tweak = tweak_data.blackmarket.projectiles and tweak_data.blackmarket.projectiles[grenade]',
+			cause = game_version(32.0)
+		},
+		{
+			issue = 'local player_style = tweak_data.blackmarket.player_styles[list.player_style]',
+			fix = 'local player_style = tweak_data.blackmarket.player_styles and tweak_data.blackmarket.player_styles[list.player_style]',
+			cause = game_version(93.844)
+		},
+		{
+			issue = 'local gloves = tweak_data.blackmarket.gloves[list.glove_id]',
+			fix = 'local gloves = tweak_data.blackmarket.gloves and tweak_data.blackmarket.gloves[list.glove_id]',
+			cause = game_version(95.894)
+		}
+	}
+	
+	todo["main.xml"] = {
+		{
+			issue = [[<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+				<object path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+				<sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/>]],
+			fix = [[<!-- <unit path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+				<!-- <object path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+				<!-- <sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->]],
+			cause = false --I need to find out which version it's fixed in.
+		}
+	}
+
+	todo["Hooks/Maps/Hooks.lua"] = {
+		{
+			issue = 'KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)',
+			fix = [[KillzoneManager.type_upd_funcs = {}
+	KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)]],
+			cause = game_version(136.173)
+		}
+	}
+	
+	todo["Hooks/Items/NetworkHooks.lua"] = {
+		{
+			issue = 'function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, cosmetics_string, sender)',
+			fix = 'function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, sender)',
+			cause = game_version(40.0)
+		},
+		{
+			issue = 'set_equipped_weapon(self, unit, item_index, blueprint_string, cosmetics_string, sender)',
+			fix = 'set_equipped_weapon(self, unit, item_index, blueprint_string, sender)',
+			cause = game_version(40.0)
+		},
+		{
+			issue = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, outfit_signature, sender)',
+			fix = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, sender)',
+			cause = game_version(33.0)
+		}
+	}
+	
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
@@ -328,17 +384,17 @@ for i, mod in ipairs(BLT.Mods:Mods()) do
 	end
 end
 
-if not file.FileExists then
+-- if not file.FileExists then
 	function file.FileExists(path)
 		return os.rename(path, path)
 	end
-end
+-- end
 
-if not file.DirectoryExists then
+-- if not file.DirectoryExists then
 	function file.DirectoryExists(path)
 		return os.rename(path, path)
 	end
-end
+-- end
 
 if not file.MoveDirectory then
 	function file.MoveDirectory(prev, path)

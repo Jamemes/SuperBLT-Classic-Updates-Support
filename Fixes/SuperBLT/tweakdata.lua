@@ -29,14 +29,27 @@ tweak_data.hud_icons.csb_stamina = {
 }
 
 tweak_data.hud_icons.csb_throwables = {
-	texture = "guis/textures/hud_icons",
+	texture = "guis/textures/pd2/hud_progress_32px",
 	texture_rect = {
-		238,
-		189.6,
-		36,
-		36
+		0,
+		0,
+		32,
+		32
 	}
 }
+
+if not tweak_data.hud_icons.scrollbar_arrow then
+	tweak_data.hud_icons.scrollbar_arrow = {
+		texture = "guis/textures/menu_arrows",
+		texture_rect = {
+			0,
+			0,
+			24,
+			24
+		}
+	}
+end
+
 if not tweak_data.BUNDLED_DLC_PACKAGES then
 	tweak_data.BUNDLED_DLC_PACKAGES = {}
 end
