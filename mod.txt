@@ -26,6 +26,8 @@
 		{"hook_id" : "lib/managers/blackmarketmanager",							"script_path" : "Fixes/BeardLib/blackmarketmanager.lua"},
 		{"hook_id" : "lib/managers/musicmanager",								"script_path" : "Fixes/BeardLib/musicmanager.lua"},
 		{"hook_id" : "lib/setups/setup",										"script_path" : "Fixes/BeardLib/setup.lua"},
+		{"hook_id" : "lib/network/base/basenetworksession",						"script_path" : "Fixes/BeardLib/basenetworksession.lua"},
+		{"hook_id" : "lib/network/base/networkpeer",							"script_path" : "Fixes/BeardLib/networkpeer.lua"},
 		{"hook_id" : "lib/managers/menu/items/menuitemcustomizecontroller", 	"script_path" : "Fixes/SuperBLT/menuitemcustomizecontroller.lua"},
 		{"hook_id" : "lib/managers/menu/textboxgui", 							"script_path" : "Fixes/SuperBLT/textboxgui.lua"},
 		{"hook_id" : "lib/managers/menu/boxguiobject", 							"script_path" : "Fixes/SuperBLT/boxguiobject.lua"},

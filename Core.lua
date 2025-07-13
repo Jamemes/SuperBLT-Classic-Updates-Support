@@ -257,7 +257,7 @@ local function fix_beardlib(path)
 		{
 			issue = 'SystemFS:rename_file',
 			fix = 'os.rename',
-			cause = game_version(54.7)
+			cause = false --I need to find out which version it's fixed in.
 		}
 	}
 	
@@ -371,19 +371,6 @@ local function fix_beardlib(path)
 		}
 	}
 	
-	todo["Classes/Managers/PackageManager.lua"] = {
-		{
-			issue = 'BeardLibPackageManager.EXT_CONVERT = {dds = "texture", png = "texture", tga = "texture", jpg = "texture", bik = "movie"}',
-			fix = 'BeardLibPackageManager.EXT_CONVERT = {dds = "texture", png = "", tga = "", jpg = "", bik = "movie"}',
-			cause = game_version(54.7)
-		},
-		{
-			issue = 'if not DB.create_entry then',
-			fix = 'if not (DB and DB.create_entry) then',
-			cause = game_version(54.7)
-		}
-	}
-
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
