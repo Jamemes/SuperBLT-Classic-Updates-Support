@@ -258,6 +258,25 @@ local function fix_beardlib(path)
 			issue = 'SystemFS:rename_file',
 			fix = 'os.rename',
 			cause = false --I need to find out which version it's fixed in.
+		},
+		{
+			issue = [[SystemFS:copy_files_async(copy_data, callback or function(success, message)
+		if success then
+			BeardLib:log("[FileIO] Done copying files")
+		else
+			BeardLib:log("[FileIO] Something went wrong when files")
+		end
+	end)]],
+			fix = [[if type(SystemFS.copy_files_async) == "function" then
+		SystemFS:copy_files_async(copy_data, callback or function(success, message)
+			if success then
+				BeardLib:log("[FileIO] Done copying files")
+			else
+				BeardLib:log("[FileIO] Something went wrong when files")
+			end
+		end)
+	end]],
+			cause = game_version(54.7)
 		}
 	}
 	
@@ -368,9 +387,42 @@ local function fix_beardlib(path)
 			issue = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, outfit_signature, sender)',
 			fix = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, sender)',
 			cause = game_version(33.0)
+		},
+		{
+			issue = [[if alive(self._melee_item_unit) then
+            local peer = managers.network:session():peer_by_unit(self._unit)]],
+			fix = [[local peer = managers.network:session():peer_by_unit(self._unit)
+        if peer and alive(self._melee_item_unit) then]],
+			cause = false --I need to find out which version it's fixed in.
+		}
+		
+		
+	}
+		
+	todo["Modules/PD2/LevelModule.lua"] = {
+		{
+			issue = 'ai_group_type = l_self.ai_groups[self._config.ai_group_type] or l_self.ai_groups.default,',
+			fix = 'ai_group_type = l_self.ai_groups and l_self.ai_groups[self._config.ai_group_type] or "america",',
+			cause = game_version(49.0)
 		}
 	}
 	
+	todo["Modules/PD2/LevelModule.lua"] = {
+		{
+			issue = 'ai_group_type = l_self.ai_groups[self._config.ai_group_type] or l_self.ai_groups.default,',
+			fix = 'ai_group_type = l_self.ai_groups and l_self.ai_groups[self._config.ai_group_type] or "america",',
+			cause = game_version(49.0)
+		}
+	}
+	
+	todo["Modules/PD2/NarrativeModule.lua"] = {
+		{
+			issue = 'tweak_data.hud_icons',
+			fix = '--tweak_data.hud_icons',
+			cause = game_version(79.387)
+		}
+	}
+
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
