@@ -203,11 +203,11 @@ local function fix_beardlib(path)
 			fix = '-- local glowobal_bmm',
 			cause = game_version(95.894)
 		},
-		-- {
-			-- issue = 'pairs(BTNS)',
-			-- fix = 'pairs({})',
-			-- cause = game_version(95.894)
-		-- },
+		{
+			issue = 'pairs(BTNS)',
+			fix = 'pairs({})',
+			cause = game_version(95.894)
+		},
 	}
 
 	todo["Classes/Managers/FileManager.lua"] = {
