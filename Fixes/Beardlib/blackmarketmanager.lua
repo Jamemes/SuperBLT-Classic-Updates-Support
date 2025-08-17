@@ -30,7 +30,6 @@ end
 
 if type(BlackMarketManager.outfit_string_from_list) ~= "function" then
 	function BlackMarketManager:outfit_string_from_list(outfit)
-		PrintTable(outfit)
 		local s = ""
 		s = s .. outfit.mask.mask_id
 		s = s .. " " .. outfit.mask.blueprint.color.id

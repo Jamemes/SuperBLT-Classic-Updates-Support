@@ -52,14 +52,16 @@ if F == "menuinput" then
 	end
 
 	Hooks:PostHook(MenuInput, "mouse_pressed", "SBLT_CUS.MenuInput.mouse_pressed.popup_choice", function(self, o, button, x, y)
-		local node_gui = managers.menu:active_menu().renderer and managers.menu:active_menu().renderer:active_node_gui()
-		if button == Idstring("0") and managers.menu_component:input_focus() ~= true and (node_gui and not node_gui.CUSTOM_MOUSE_INPUT) then
-			for _, row_item in pairs(node_gui.row_items) do
-				local x, y = self:_modified_mouse_pos(x, y)
-				if type(row_item.item.popup_choice) ~= "function" and row_item.type == "multi_choice" and row_item.choice_panel:inside(x, y) and row_item.item:enabled() then
-					popup_choice(row_item.item, row_item)
-					self:post_event("selection_next")
-					self._logic:trigger_item(true, row_item.item)
+		if button == Idstring("0") and managers.menu_component:input_focus() ~= true then
+			local node_gui = managers.menu:active_menu() and managers.menu:active_menu().renderer and managers.menu:active_menu().renderer:active_node_gui()
+			if node_gui and not node_gui.CUSTOM_MOUSE_INPUT then
+				for _, row_item in pairs(node_gui.row_items) do
+					local x, y = self:_modified_mouse_pos(x, y)
+					if type(row_item.item.popup_choice) ~= "function" and row_item.type == "multi_choice" and row_item.choice_panel:inside(x, y) and row_item.item:enabled() then
+						popup_choice(row_item.item, row_item)
+						self:post_event("selection_next")
+						self._logic:trigger_item(true, row_item.item)
+					end
 				end
 			end
 		end
