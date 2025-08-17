@@ -1,4 +1,3 @@
--- BeardLib
 if not tweak_data.music.track_list and not tweak_data.music.track_menu_list then
 	tweak_data.music.track_list = {}
 	tweak_data.music.track_menu_list = {}

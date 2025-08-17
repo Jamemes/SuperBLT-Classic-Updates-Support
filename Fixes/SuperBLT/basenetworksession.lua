@@ -11,3 +11,9 @@ if type(BaseNetworkSession.peer_by_unit) ~= "function" then
 		end
 	end
 end
+
+if type(BaseNetworkSession.all_peers) ~= "function" then
+	function BaseNetworkSession:all_peers()
+		return self._peers_all or {}
+	end
+end

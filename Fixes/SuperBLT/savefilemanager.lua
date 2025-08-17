@@ -86,7 +86,7 @@ end
 load_progress_slot()
 
 -- pre-U27 save file fix
-if SavefileManager._meta_data_slot_detected_done_callback then
+if type(SavefileManager._meta_data_slot_detected_done_callback) == "function" then
 	function SavefileManager:_meta_data_slot_detected_done_callback()
 		self._loading_sequence = true
 		print("SavefileManager:_meta_data_slot_detected_done_callback", self._has_meta_list)
@@ -112,9 +112,9 @@ if SavefileManager._meta_data_slot_detected_done_callback then
 end
 
 -- pre-U46 save file fix
-if SavefileManager.clbk_result_iterate_savegame_slots then
+if type(SavefileManager.clbk_result_iterate_savegame_slots) == "function" then
 	function SavefileManager:clbk_result_iterate_savegame_slots(task_data, result_data)
-		print("[SavefileManager:clbk_result_iterate_savegame_slots]", inspect(task_data), inspect(result_data))
+		-- log("[SavefileManager:clbk_result_iterate_savegame_slots]", inspect(task_data), inspect(result_data))
 		if not self:_on_task_completed(task_data) then
 			return
 		end
@@ -122,7 +122,7 @@ if SavefileManager.clbk_result_iterate_savegame_slots then
 		local found_progress_slot
 		if type_name(result_data) == "table" then
 			for slot, slot_data in pairs(result_data) do
-				print("slot:", slot, "\n", inspect(slot_data))
+				-- log("slot:", slot, "\n", inspect(slot_data))
 				if slot == self.SETTING_SLOT then
 					self._save_slots_to_load[slot] = true
 					self:load_settings()

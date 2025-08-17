@@ -45,12 +45,8 @@ collect_files_pathes(file.GetDirectories(required_folder), required_folder)
 
 local req = require
 function require(...)
-	if blt == nil then
-		blt = setmetatable({}, {})
-	end
-
 	local param = {...}
-	for k, path in pairs(components_directories) do
+	for _, path in pairs(components_directories) do
 		if string.lower(param[1]) == string.lower(path) then
 			BLT:RunHookTable(BLT.hook_tables.pre, string.lower(param[1]))
 			dofile(required_folder .. string.lower(param[1]) .. ".lua")
@@ -59,7 +55,7 @@ function require(...)
 			return
 		end
 	end
-	
+
 	return req(...)
 end
 
@@ -80,12 +76,20 @@ local function change_lines(path, problems)
 	for _, problem in pairs(problems) do
 		problem.fix = problem.fix:gsub("%p", function(s) return '%' .. s end)
 		problem.issue = problem.issue:gsub("%p", function(s) return '%' .. s end)
-		if not problem.cause and not str_file:find(problem.fix) then
-			str_file = str_file:gsub(problem.issue, problem.fix)
-			changes = true
-		elseif problem.cause and str_file:find(problem.fix) then
-			str_file = str_file:gsub(problem.fix, problem.issue)
-			changes = true
+		
+		local fix, fixed = string.gsub(str_file, problem.issue, problem.fix)
+		local unfix, unfixed = string.gsub(str_file, problem.fix, problem.issue)
+		
+		if not problem.cause then
+			if fixed > 0 and unfixed <= 0 then
+				str_file = fix
+				changes = true
+			end
+		elseif problem.cause then
+			if unfixed > 0 and fixed <= 0 then
+				str_file = unfix
+				changes = true
+			end
 		end
 	end
 
@@ -100,16 +104,16 @@ local function fix_sblt(path)
 	local todo = {}
 	todo["req/BLTMod.lua"] = {
 		{
-			issue = 'self:GetPath() .. tostring(self.image_path)',
-			fix = 'self:GetPath() .. tostring(self.image_path:gsub(".png", ""))',
+			issue = 'if file.FileExists(Application:nice_path(self:GetModImagePath())) then',
+			fix = 'if file.FileExists(Application:nice_path(self:GetModImagePath())) and not self:GetModImagePath():find(".png") and not self:GetModImagePath():find(".tga") then',
 			cause = game_version(54.7)
 		}
 	}
 
 	todo["lua/SystemMenuManager.lua"] = {
 		{
-			issue = 'require',
-			fix = '-- require',
+			issue = 'require("lib/managers/dialogs/SpecializationDialog")',
+			fix = '--[[require("lib/managers/dialogs/SpecializationDialog")]]--',
 			cause = game_version(16.1)
 		}
 	}
@@ -119,7 +123,7 @@ local function fix_sblt(path)
 			issue = 'local page_button = self._buttons_panel:bitmap({',
 			fix = [[local page_button = self._buttons_panel:bitmap({
 			alpha = 0,]],
-			cause = DB:has(Idstring("texture"), Idstring("guis/textures/pd2/ad_spot"))
+			cause = false
 		},
 		{
 			issue = 'managers.experience:cash_string(pending_downloads_count, "")',
@@ -199,13 +203,26 @@ local function fix_beardlib(path)
 			fix = '-- local glowobal_bmm',
 			cause = game_version(95.894)
 		},
-		{
-			issue = 'pairs(BTNS)',
-			fix = 'pairs({})',
-			cause = game_version(95.894)
-		},
+		-- {
+			-- issue = 'pairs(BTNS)',
+			-- fix = 'pairs({})',
+			-- cause = game_version(95.894)
+		-- },
 	}
 
+	todo["Classes/Managers/FileManager.lua"] = {
+		{
+			issue = 'Application:reload_textures',
+			fix = '-- Application:reload_textures',
+			cause = game_version(54.7)
+		},
+		{
+			issue = 'blt.wren_io',
+			fix = '-- blt.wren_io',
+			cause = blt and blt.wren_io
+		}
+	}
+	
 	todo["Classes/Frameworks.lua"] = {
 		{
 			issue = 'self:FindAlreadyOverriden',
@@ -214,6 +231,249 @@ local function fix_beardlib(path)
 		}
 	}
 	
+	todo["Hooks/Items/NetworkPeer.lua"] = {
+		{
+			issue = 'and not setup:is_unloading()',
+			fix = '-- and not setup:is_unloading()',
+			cause = game_version(16.1)
+		},
+		{
+			issue = 'managers.menu_component:peer_outfit_updated(self:id())',
+			fix = 'managers.menu_component:on_job_updated()',
+			cause = game_version(46.3)
+		},
+		{
+			issue = 'scene:_select_lobby_character_pose',
+			fix = '-- scene:_select_lobby_character_pose',
+			cause = game_version(40.0)
+		},
+		{
+			issue = 'scene:set_character_armor_skin',
+			fix = '-- scene:set_character_armor_skin',
+			cause = game_version(68.193)
+		},
+		{
+			issue = 'scene:set_character_player_style',
+			fix = '-- scene:set_character_player_style',
+			cause = game_version(93.844)
+		},
+		{
+			issue = 'scene:set_character_gloves',
+			fix = '-- scene:set_character_gloves',
+			cause = game_version(95.894)
+		},
+		{
+			issue = 'if bm.player_styles[new_outfit.player_style] and',
+			fix = 'if bm.player_styles and bm.player_styles[new_outfit.player_style] and',
+			cause = game_version(93.844)
+		},
+		{
+			issue = 'if bm.gloves[new_outfit.glove_id] and',
+			fix = 'if bm.gloves and bm.gloves[new_outfit.glove_id] and',
+			cause = game_version(95.894)
+		},
+	}
+
+
+	todo["main.xml"] = {
+		{
+			issue = [[<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+				<object path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+				<sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/>
+
+				<object path="units/dev_tools/mission_elements/point_interaction/interaction_dummy"/>
+				<sequence_manager path="units/dev_tools/mission_elements/point_interaction/interaction_dummy"/>
+				<unit path="units/dev_tools/mission_elements/point_interaction/interaction_dummy"/>
+
+				<unit path="units/payday2/props/gen_prop_lazer_blaster_dome/gen_prop_lazer_blaster_dome"/>
+				<object path="units/payday2/props/gen_prop_lazer_blaster_dome/gen_prop_lazer_blaster_dome"/>
+				<material_config path="units/payday2/props/gen_prop_lazer_blaster_dome/gen_prop_lazer_blaster_dome"/>
+
+				<!-- NPC acc stuff -->
+				<unit path="units/payday2/characters/npc_acc_canvas_bag_1/npc_acc_canvas_bag_1"/>
+				<object path="units/payday2/characters/npc_acc_canvas_bag_1/npc_acc_canvas_bag_1"/>
+				<material_config path="units/payday2/characters/npc_acc_canvas_bag_1/npc_acc_canvas_bag_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_safe_wpn_1/npc_acc_safe_wpn_1"/>
+				<object path="units/payday2/characters/npc_acc_safe_wpn_1/npc_acc_safe_wpn_1"/>
+				<material_config path="units/payday2/characters/npc_acc_safe_wpn_1/npc_acc_safe_wpn_1"/>
+
+				<unit path="units/pd2_dlc_jerry/characters/npc_acc_parachute_1/npc_acc_parachute_1"/>
+				<object path="units/pd2_dlc_jerry/characters/npc_acc_parachute_1/npc_acc_parachute_1"/>
+				<material_config path="units/pd2_dlc_jerry/characters/npc_acc_parachute_1/npc_acc_parachute_1"/>
+
+				<unit path="units/pd2_dlc_peta/characters/npc_acc_goat_bag_1/npc_acc_goat_bag_1"/>
+				<object path="units/pd2_dlc_peta/characters/npc_acc_goat_bag_1/npc_acc_goat_bag_1"/>
+				<material_config path="units/pd2_dlc_peta/characters/npc_acc_goat_bag_1/npc_acc_goat_bag_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_safe_ovk_1/npc_acc_safe_ovk_1"/>
+				<object path="units/payday2/characters/npc_acc_safe_ovk_1/npc_acc_safe_ovk_1"/>
+				<material_config path="units/payday2/characters/npc_acc_safe_ovk_1/npc_acc_safe_ovk_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_explosives_bag_1/npc_acc_explosives_bag_1"/>
+				<object path="units/payday2/characters/npc_acc_explosives_bag_1/npc_acc_explosives_bag_1"/>
+				<material_config path="units/payday2/characters/npc_acc_explosives_bag_1/npc_acc_explosives_bag_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_cage_bag_1/npc_acc_cage_bag_1"/>
+				<object path="units/payday2/characters/npc_acc_cage_bag_1/npc_acc_cage_bag_1"/>
+				<material_config path="units/payday2/characters/npc_acc_cage_bag_1/npc_acc_cage_bag_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_tools_bag_large_1/npc_acc_tools_bag_large_1"/>
+				<object path="units/payday2/characters/npc_acc_tools_bag_large_1/npc_acc_tools_bag_large_1"/>
+				<material_config path="units/payday2/characters/npc_acc_tools_bag_large_1/npc_acc_tools_bag_large_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_body_bag_1/npc_acc_body_bag_1"/>
+				<object path="units/payday2/characters/npc_acc_body_bag_1/npc_acc_body_bag_1"/>
+				<material_config path="units/payday2/characters/npc_acc_body_bag_1/npc_acc_body_bag_1"/>
+
+				<unit path="units/pd2_dlc_help/characters/npc_acc_spooky_bag/npc_acc_spooky_bag"/>
+				<object path="units/pd2_dlc_help/characters/npc_acc_spooky_bag/npc_acc_spooky_bag"/>
+				<material_config path="units/pd2_dlc_help/characters/npc_acc_spooky_bag/npc_acc_spooky_bag"/>
+
+				<unit path="units/payday2/characters/npc_acc_loot_bag_1/npc_acc_loot_bag_1"/>
+				<object path="units/payday2/characters/npc_acc_loot_bag_1/npc_acc_loot_bag_1"/>
+				<material_config path="units/payday2/characters/npc_acc_loot_bag_1/npc_acc_loot_bag_1"/>
+
+				<unit path="units/payday2/characters/npc_acc_tools_bag_1/npc_acc_tools_bag_1"/>
+				<object path="units/payday2/characters/npc_acc_tools_bag_1/npc_acc_tools_bag_1"/>
+				<material_config path="units/payday2/characters/npc_acc_tools_bag_1/npc_acc_tools_bag_1"/>]],
+			fix = [[<!-- <unit path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+				<!-- <object path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+				<!-- <sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
+
+				<!-- <object path="units/dev_tools/mission_elements/point_interaction/interaction_dummy"/> -->
+				<!-- <sequence_manager path="units/dev_tools/mission_elements/point_interaction/interaction_dummy"/> -->
+				<!-- <unit path="units/dev_tools/mission_elements/point_interaction/interaction_dummy"/> -->
+
+				<!-- <unit path="units/payday2/props/gen_prop_lazer_blaster_dome/gen_prop_lazer_blaster_dome"/> -->
+				<!-- <object path="units/payday2/props/gen_prop_lazer_blaster_dome/gen_prop_lazer_blaster_dome"/> -->
+				<!-- <material_config path="units/payday2/props/gen_prop_lazer_blaster_dome/gen_prop_lazer_blaster_dome"/> -->
+
+				<!-- NPC acc stuff -->
+				<!-- <unit path="units/payday2/characters/npc_acc_canvas_bag_1/npc_acc_canvas_bag_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_canvas_bag_1/npc_acc_canvas_bag_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_canvas_bag_1/npc_acc_canvas_bag_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_safe_wpn_1/npc_acc_safe_wpn_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_safe_wpn_1/npc_acc_safe_wpn_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_safe_wpn_1/npc_acc_safe_wpn_1"/> -->
+
+				<!-- <unit path="units/pd2_dlc_jerry/characters/npc_acc_parachute_1/npc_acc_parachute_1"/> -->
+				<!-- <object path="units/pd2_dlc_jerry/characters/npc_acc_parachute_1/npc_acc_parachute_1"/> -->
+				<!-- <material_config path="units/pd2_dlc_jerry/characters/npc_acc_parachute_1/npc_acc_parachute_1"/> -->
+
+				<!-- <unit path="units/pd2_dlc_peta/characters/npc_acc_goat_bag_1/npc_acc_goat_bag_1"/> -->
+				<!-- <object path="units/pd2_dlc_peta/characters/npc_acc_goat_bag_1/npc_acc_goat_bag_1"/> -->
+				<!-- <material_config path="units/pd2_dlc_peta/characters/npc_acc_goat_bag_1/npc_acc_goat_bag_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_safe_ovk_1/npc_acc_safe_ovk_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_safe_ovk_1/npc_acc_safe_ovk_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_safe_ovk_1/npc_acc_safe_ovk_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_explosives_bag_1/npc_acc_explosives_bag_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_explosives_bag_1/npc_acc_explosives_bag_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_explosives_bag_1/npc_acc_explosives_bag_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_cage_bag_1/npc_acc_cage_bag_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_cage_bag_1/npc_acc_cage_bag_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_cage_bag_1/npc_acc_cage_bag_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_tools_bag_large_1/npc_acc_tools_bag_large_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_tools_bag_large_1/npc_acc_tools_bag_large_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_tools_bag_large_1/npc_acc_tools_bag_large_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_body_bag_1/npc_acc_body_bag_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_body_bag_1/npc_acc_body_bag_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_body_bag_1/npc_acc_body_bag_1"/> -->
+
+				<!-- <unit path="units/pd2_dlc_help/characters/npc_acc_spooky_bag/npc_acc_spooky_bag"/> -->
+				<!-- <object path="units/pd2_dlc_help/characters/npc_acc_spooky_bag/npc_acc_spooky_bag"/> -->
+				<!-- <material_config path="units/pd2_dlc_help/characters/npc_acc_spooky_bag/npc_acc_spooky_bag"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_loot_bag_1/npc_acc_loot_bag_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_loot_bag_1/npc_acc_loot_bag_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_loot_bag_1/npc_acc_loot_bag_1"/> -->
+
+				<!-- <unit path="units/payday2/characters/npc_acc_tools_bag_1/npc_acc_tools_bag_1"/> -->
+				<!-- <object path="units/payday2/characters/npc_acc_tools_bag_1/npc_acc_tools_bag_1"/> -->
+				<!-- <material_config path="units/payday2/characters/npc_acc_tools_bag_1/npc_acc_tools_bag_1"/> -->]],
+			cause = false --I need to find out which version it's fixed in.
+		}
+	}
+
+	todo["Classes/Utils/Sync.lua"] = {
+		{
+			issue = 'local grenade_tweak = tweak_data.blackmarket.projectiles[grenade]',
+			fix = 'local grenade_tweak = tweak_data.blackmarket.projectiles and tweak_data.blackmarket.projectiles[grenade]',
+			cause = game_version(32.0)
+		},
+		{
+			issue = 'local player_style = tweak_data.blackmarket.player_styles[list.player_style]',
+			fix = 'local player_style = tweak_data.blackmarket.player_styles and tweak_data.blackmarket.player_styles[list.player_style]',
+			cause = game_version(93.844)
+		},
+		{
+			issue = 'local gloves = tweak_data.blackmarket.gloves[list.glove_id]',
+			fix = 'local gloves = tweak_data.blackmarket.gloves and tweak_data.blackmarket.gloves[list.glove_id]',
+			cause = game_version(95.894)
+		}
+	}
+	
+	todo["Hooks/Maps/NetworkHooks.lua"] = {
+		{
+			issue = 'managers.network._handlers.connection:sync_game_settings(job_index, level_index, difficulty_index, Global.game_settings.one_down, Global.game_settings.weekly_skirmish, rpc)',
+			fix = 'managers.network._handlers.connection:sync_game_settings(job_index, level_index, difficulty_index, rpc)',
+			cause = not game_version(87.537)
+		},
+		{
+			issue = 'difficulty_index, one_down, state_index, server_character, user_id,',
+			fix = 'difficulty_index, state_index, server_character, user_id,',
+			cause = game_version(87.537)
+		},
+		{
+			issue = [[tweak_data:difficulty_to_index(split_data[3]),
+			Global.game_settings.one_down,
+			managers.network:session():peer(sender):rpc())]],
+			fix = [[tweak_data:difficulty_to_index(split_data[3]),
+			managers.network:session():peer(sender):rpc())]],
+			cause = game_version(87.537)
+		},
+	}
+
+	todo["Hooks/Items/NetworkHooks.lua"] = {
+		{
+			issue = 'function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, cosmetics_string, sender)',
+			fix = 'function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, sender)',
+			cause = game_version(40.0)
+		},
+		{
+			issue = 'set_equipped_weapon(self, unit, item_index, blueprint_string, cosmetics_string, sender)',
+			fix = 'set_equipped_weapon(self, unit, item_index, blueprint_string, sender)',
+			cause = game_version(40.0)
+		},
+		{
+			issue = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, outfit_signature, sender)',
+			fix = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, sender)',
+			cause = game_version(33.0)
+		},
+		{
+			issue = [[if alive(self._melee_item_unit) then
+            local peer = managers.network:session():peer_by_unit(self._unit)]],
+			fix = [[local peer = managers.network:session():peer_by_unit(self._unit)
+        if peer and alive(self._melee_item_unit) then]],
+			cause = false --I need to find out which version it's fixed in.
+		}
+	}
+
+	todo["Hooks/Maps/Hooks.lua"] = {
+		{
+			issue = 'KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)',
+			fix = [[KillzoneManager.type_upd_funcs = {}
+	KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)]],
+			cause = game_version(136.173)
+		}
+	}
+
 	todo["Classes/Managers/FileManager.lua"] = {
 		{
 			issue = 'Application:reload_textures',
@@ -277,133 +537,6 @@ local function fix_beardlib(path)
 		end)
 	end]],
 			cause = game_version(54.7)
-		}
-	}
-	
-	todo["Hooks/Items/NetworkPeer.lua"] = {
-		{
-			issue = 'if bm.player_styles[new_outfit.player_style] and',
-			fix = 'if bm.player_styles and bm.player_styles[new_outfit.player_style] and',
-			cause = game_version(93.844)
-		},
-		{
-			issue = 'if bm.gloves[new_outfit.glove_id] and',
-			fix = 'if bm.gloves and bm.gloves[new_outfit.glove_id] and',
-			cause = game_version(95.894)
-		},
-		{
-			issue = 'and not setup:is_unloading()',
-			fix = '-- and not setup:is_unloading()',
-			cause = game_version(16.1)
-		},
-		{
-			issue = 'scene:set_character_armor_skin',
-			fix = '-- scene:set_character_armor_skin',
-			cause = game_version(68.193)
-		},
-		{
-			issue = 'scene:set_character_player_style',
-			fix = '-- scene:set_character_player_style',
-			cause = game_version(93.844)
-		},
-		{
-			issue = 'scene:set_character_gloves',
-			fix = '-- scene:set_character_gloves',
-			cause = game_version(95.894)
-		},
-		{
-			issue = [[if managers.menu_component then
-        managers.menu_component:peer_outfit_updated(self:id())
-    end]],
-			fix = [[--if managers.menu_component then
-        --managers.menu_component:peer_outfit_updated(self:id())
-    --end]],
-			cause = game_version(46.3)
-		},
-		{
-			issue = 'self._profile.outfit_string = SyncUtils:OutfitStringFromList(old_outfit)',
-			fix = '-- self._profile.outfit_string = SyncUtils:OutfitStringFromList(old_outfit)',
-			cause = game_version(95.894)
-		},
-		{
-			issue = 'scene:_select_lobby_character_pose',
-			fix = '-- scene:_select_lobby_character_pose',
-			cause = game_version(40.0)
-		},
-		
-	}
-
-	todo["Classes/Utils/Sync.lua"] = {
-		{
-			issue = 'local grenade_tweak = tweak_data.blackmarket.projectiles[grenade]',
-			fix = 'local grenade_tweak = tweak_data.blackmarket.projectiles and tweak_data.blackmarket.projectiles[grenade]',
-			cause = game_version(32.0)
-		},
-		{
-			issue = 'local player_style = tweak_data.blackmarket.player_styles[list.player_style]',
-			fix = 'local player_style = tweak_data.blackmarket.player_styles and tweak_data.blackmarket.player_styles[list.player_style]',
-			cause = game_version(93.844)
-		},
-		{
-			issue = 'local gloves = tweak_data.blackmarket.gloves[list.glove_id]',
-			fix = 'local gloves = tweak_data.blackmarket.gloves and tweak_data.blackmarket.gloves[list.glove_id]',
-			cause = game_version(95.894)
-		}
-	}
-	
-	todo["main.xml"] = {
-		{
-			issue = [[<unit path="core/units/run_sequence_dummy/run_sequence_dummy"/>
-				<object path="core/units/run_sequence_dummy/run_sequence_dummy"/>
-				<sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/>]],
-			fix = [[<!-- <unit path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
-				<!-- <object path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->
-				<!-- <sequence_manager path="core/units/run_sequence_dummy/run_sequence_dummy"/> -->]],
-			cause = false --I need to find out which version it's fixed in.
-		}
-	}
-
-	todo["Hooks/Maps/Hooks.lua"] = {
-		{
-			issue = 'KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)',
-			fix = [[KillzoneManager.type_upd_funcs = {}
-	KillzoneManager.type_upd_funcs.kill = function (obj, t, dt, data)]],
-			cause = game_version(136.173)
-		}
-	}
-	
-	todo["Hooks/Items/NetworkHooks.lua"] = {
-		{
-			issue = 'function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, cosmetics_string, sender)',
-			fix = 'function UnitNetworkHandler:set_equipped_weapon(unit, item_index, blueprint_string, sender)',
-			cause = game_version(40.0)
-		},
-		{
-			issue = 'set_equipped_weapon(self, unit, item_index, blueprint_string, cosmetics_string, sender)',
-			fix = 'set_equipped_weapon(self, unit, item_index, blueprint_string, sender)',
-			cause = game_version(40.0)
-		},
-		{
-			issue = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, outfit_signature, sender)',
-			fix = '"BeardLibSyncOutfitProperly", function(self, outfit_string, outfit_version, sender)',
-			cause = game_version(33.0)
-		},
-		{
-			issue = [[if alive(self._melee_item_unit) then
-            local peer = managers.network:session():peer_by_unit(self._unit)]],
-			fix = [[local peer = managers.network:session():peer_by_unit(self._unit)
-        if peer and alive(self._melee_item_unit) then]],
-			cause = false --I need to find out which version it's fixed in.
-		}
-		
-		
-	}
-		
-	todo["Modules/PD2/LevelModule.lua"] = {
-		{
-			issue = 'ai_group_type = l_self.ai_groups[self._config.ai_group_type] or l_self.ai_groups.default,',
-			fix = 'ai_group_type = l_self.ai_groups and l_self.ai_groups[self._config.ai_group_type] or "america",',
-			cause = game_version(49.0)
 		}
 	}
 	
