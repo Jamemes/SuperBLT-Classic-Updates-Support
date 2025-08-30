@@ -12,7 +12,7 @@
 	"disable_safe_mode" : true,
 	"updates" : [
 		{
-			"identifier" : "SuperBLT-CUS",
+			"identifier" : "SuperBLT-CUS-dev",
 			"host": {
 				"meta": "https://raw.githubusercontent.com/Jamemes/SuperBLT-Classic-Updates-Support/meta/meta.json"
 			}

@@ -553,6 +553,11 @@ local function fix_beardlib(path)
 			issue = 'tweak_data.hud_icons',
 			fix = '--tweak_data.hud_icons',
 			cause = game_version(79.387)
+		},
+		{
+			issue = 'narr_self.stages',
+			fix = '--narr_self.stages',
+			cause = game_version(65.0)
 		}
 	}
 
