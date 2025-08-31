@@ -1,4 +1,4 @@
-local F = table.remove(RequiredScript:split("/"))
+-- local F = table.remove(RequiredScript:split("/"))
 if F == "menumanager" then
 	function MenuCallbackHandler:tap_to_interact_choice(item)
 		local setting = item:value()
