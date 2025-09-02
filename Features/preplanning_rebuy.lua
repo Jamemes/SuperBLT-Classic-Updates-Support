@@ -231,6 +231,53 @@ elseif F == "preplanningmanager" and type(PrePlanningManager) ~= "nil" and type(
 		self._rebuy_assets.reminder_active = true
 	end)
 
+	
+	Hooks:PostHook(PrePlanningManager, "init", "PrePlanningManager.init.rebuy_assets", function(self, node)
+		if not Global.preplanning_manager then
+			Global.preplanning_manager = {
+				rebuy_assets = {}
+			}
+		end
+
+		self._rebuy_assets = Global.preplanning_manager.rebuy_assets
+		self._rebuy_assets.reminder_active = true
+	end)
+
+	Hooks:PreHook(PrePlanningManager, "on_execute_preplanning", "PrePlanningManager.on_execute_preplanning.rebuy_assets", function(self, node)
+		if self._reserved_mission_elements then
+			Global.preplanning_manager.rebuy_assets.assets = {}
+
+			for id, asset in pairs(self._reserved_mission_elements) do
+				local asset_type = asset.pack[1]
+				local index = asset.pack[2]
+
+				table.insert(Global.preplanning_manager.rebuy_assets.assets, {
+					id = id,
+					type = asset_type,
+					index = index
+				})
+			end
+		end
+
+		local winners = self:get_current_majority_votes()
+
+		if winners then
+			Global.preplanning_manager.rebuy_assets.votes = {}
+
+			for _, data in pairs(winners) do
+				local type, index = unpack(data)
+
+				table.insert(Global.preplanning_manager.rebuy_assets.votes, {
+					index = index,
+					id = self:get_mission_element_id(type, index),
+					type = type
+				})
+			end
+		end
+
+		Global.preplanning_manager.rebuy_assets.level_id = managers.job:current_level_id()
+	end)
+	
 	function PrePlanningManager:on_preplanning_open_old()
 		if self:get_can_rebuy_assets() and self._rebuy_assets.reminder_active then
 			self._rebuy_assets.reminder_active = false
@@ -254,7 +301,7 @@ elseif F == "preplanningmanager" and type(PrePlanningManager) ~= "nil" and type(
 	end
 
 	function PrePlanningManager:get_can_rebuy_assets()
-		return self._rebuy_assets and self._rebuy_assets.assets and #self._rebuy_assets.assets ~= 0 and self._rebuy_assets.level_id == managers.job:current_level_id()
+		return self._rebuy_assets and ((self._rebuy_assets.votes and #self._rebuy_assets.votes ~= 0) or (self._rebuy_assets.assets and #self._rebuy_assets.assets ~= 0)) and self._rebuy_assets.level_id == managers.job:current_level_id()
 	end
 
 	function PrePlanningManager:reset_rebuy_assets()
@@ -297,79 +344,6 @@ elseif F == "preplanningmanager" and type(PrePlanningManager) ~= "nil" and type(
 				self:mass_vote_on_plan(plan.type, plan.id)
 			end
 		end
-	end
-
-	function PrePlanningManager:on_execute_preplanning()
-		if self:has_current_level_preplanning() then
-			managers.money:on_buy_preplanning_types()
-			managers.money:on_buy_preplanning_votes()
-
-			local current_budget, total_budget = self:get_current_budget()
-
-			if current_budget == total_budget and managers.job:current_level_id() == "big" then
-				managers.achievment:award("bigbank_8")
-			end
-
-			local local_peer_id = managers.network:session():local_peer():id()
-			local award_achievement, progress_stat, type_data = nil
-
-			for id, data in pairs(self._reserved_mission_elements) do
-				if data.peer_id == local_peer_id then
-					type_data = tweak_data.preplanning.types[data.pack[1]]
-
-					if type_data then
-						award_achievement = type_data.award_achievement
-
-						if award_achievement then
-							managers.achievment:award(award_achievement)
-						end
-
-						progress_stat = type_data.progress_stat
-
-						if progress_stat then
-							managers.achievment:award_progress(progress_stat)
-						end
-					end
-				end
-			end
-
-			if self._reserved_mission_elements then
-				Global.preplanning_manager.rebuy_assets.assets = {}
-
-				for id, asset in pairs(self._reserved_mission_elements) do
-					local asset_type = asset.pack[1]
-					local index = asset.pack[2]
-
-					table.insert(Global.preplanning_manager.rebuy_assets.assets, {
-						id = id,
-						type = asset_type,
-						index = index
-					})
-				end
-			end
-
-			local winners = self:get_current_majority_votes()
-
-			if winners then
-				Global.preplanning_manager.rebuy_assets.votes = {}
-
-				for _, data in pairs(winners) do
-					local type, index = unpack(data)
-
-					table.insert(Global.preplanning_manager.rebuy_assets.votes, {
-						index = index,
-						id = self:get_mission_element_id(type, index),
-						type = type
-					})
-				end
-			end
-
-			Global.preplanning_manager.rebuy_assets.level_id = managers.job:current_level_id()
-		end
-
-		self._reserved_mission_elements = {}
-		self._players_votes = {}
-		self._executed_reserved_mission_elements = nil
 	end
 
 	function PrePlanningManager:get_element_name_by_type_index(type, index)

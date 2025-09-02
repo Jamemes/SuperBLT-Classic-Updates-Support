@@ -1,5 +1,5 @@
 core:module("CoreMenuItemSlider")
-if ItemSlider.slider_color then
+if type(ItemSlider.slider_color) == "function" then
 	return
 end
 
