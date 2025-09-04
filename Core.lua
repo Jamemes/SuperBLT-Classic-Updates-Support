@@ -1,6 +1,7 @@
-local SBLT_CUS_path = ModPath
+_G.SBLT_CUS = {}
+SBLT_CUS.path = ModPath
 
-function game_version(param)
+function SBLT_CUS:game_version(param)
 	local ver = ""
 	local ver_file = io.open("game.ver", 'r')
 	if not ver_file then
@@ -26,37 +27,11 @@ function game_version(param)
 	end
 end
 
-local components_directories = {}
-local required_folder = SBLT_CUS_path .. "Components/"
-function collect_files_pathes(path, previous)
-	for _, folder in pairs(path) do
-		local directory = previous .. folder .. "/"
-		for _, f in pairs(file.GetFiles(directory)) do
-			local file_directory = directory .. f
-			local clear_path = file_directory:sub(#required_folder + 1, #file_directory - 4)
-			table.insert(components_directories, clear_path)
-		end
-	
-		collect_files_pathes(file.GetDirectories(directory), directory)
-	end
-end
-
-collect_files_pathes(file.GetDirectories(required_folder), required_folder)
-
-local req = require
-function require(...)
-	local param = {...}
-	for _, path in pairs(components_directories) do
-		if string.lower(param[1]) == string.lower(path) then
-			BLT:RunHookTable(BLT.hook_tables.pre, string.lower(param[1]))
-			dofile(required_folder .. string.lower(param[1]) .. ".lua")
-			BLT:RunHookTable(BLT.hook_tables.post, string.lower(param[1]))
-
-			return
-		end
-	end
-
-	return req(...)
+function SBLT_CUS:require(path)
+	local required_folder = string.format("%s%s%s.lua", SBLT_CUS.path, "Components/", path:lower())
+	BLT:RunHookTable(BLT.hook_tables.pre, string.lower(path))
+	dofile(required_folder)
+	BLT:RunHookTable(BLT.hook_tables.post, string.lower(path))
 end
 
 local function change_lines(path, problems)
@@ -106,7 +81,7 @@ local function fix_sblt(path)
 		{
 			issue = 'if file.FileExists(Application:nice_path(self:GetModImagePath())) then',
 			fix = 'if file.FileExists(Application:nice_path(self:GetModImagePath())) and not self:GetModImagePath():find(".png") and not self:GetModImagePath():find(".tga") then',
-			cause = game_version(54.7)
+			cause = SBLT_CUS:game_version(54.7)
 		}
 	}
 
@@ -114,7 +89,7 @@ local function fix_sblt(path)
 		{
 			issue = 'require("lib/managers/dialogs/SpecializationDialog")',
 			fix = '--[[require("lib/managers/dialogs/SpecializationDialog")]]--',
-			cause = game_version(16.1)
+			cause = SBLT_CUS:game_version(16.1)
 		}
 	}
 
@@ -146,7 +121,7 @@ local function fix_sblt(path)
 		managers.network.account:overlay_activate("url", url)]],
 			fix = [[if managers.network and managers.network.account and Steam.overlay_activate then
 		Steam:overlay_activate("url", url)]],
-			cause = game_version(139.193)
+			cause = SBLT_CUS:game_version(139.193)
 		}
 	}
 
@@ -190,17 +165,17 @@ for i, mod in ipairs(BLT.Mods:Mods()) do
 	end
 end
 
--- if not file.FileExists then
+if not file.FileExists then
 	function file.FileExists(path)
 		return os.rename(path, path)
 	end
--- end
+end
 
--- if not file.DirectoryExists then
+if not file.DirectoryExists then
 	function file.DirectoryExists(path)
 		return os.rename(path, path)
 	end
--- end
+end
 
 if not file.MoveDirectory then
 	function file.MoveDirectory(prev, path)

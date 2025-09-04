@@ -1,4 +1,4 @@
-local game_ver = game_version()
+local game_ver = SBLT_CUS:game_version()
 local game_update = tweak_data.updates_table[game_ver] or ""
 Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 	LocalizationManager:add_localized_strings({

@@ -1,6 +1,6 @@
-require("lib/managers/menu/ExtendedPanel")
-require("lib/managers/menu/UiPlacer")
-require("lib/managers/menu/ScrollablePanel")
+SBLT_CUS:require("lib/managers/menu/ExtendedPanel")
+SBLT_CUS:require("lib/managers/menu/UiPlacer")
+SBLT_CUS:require("lib/managers/menu/ScrollablePanel")
 
 local massive_font = tweak_data.menu.pd2_massive_font
 local large_font = tweak_data.menu.pd2_large_font

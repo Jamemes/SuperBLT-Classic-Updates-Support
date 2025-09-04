@@ -1,12 +1,12 @@
-require("lib/managers/menu/items/MenuItemInput")
-require("lib/managers/menu/ExtendedUiElemets")
-require("lib/managers/hud/HudChallengeNotification")
-require("lib/managers/menu/MenuInitiatorBase")
-require("lib/managers/menu/MenuGuiComponent")
-require("lib/managers/menu/MenuGuiComponentGeneric")
-require("lib/managers/menu/MultiProfileItemGui")
-require("lib/managers/menu/NewHeistsGui")
-require("lib/managers/menu/SearchBoxGuiObject")
+SBLT_CUS:require("lib/managers/menu/items/MenuItemInput")
+SBLT_CUS:require("lib/managers/menu/ExtendedUiElemets")
+SBLT_CUS:require("lib/managers/hud/HudChallengeNotification")
+SBLT_CUS:require("lib/managers/menu/MenuInitiatorBase")
+SBLT_CUS:require("lib/managers/menu/MenuGuiComponent")
+SBLT_CUS:require("lib/managers/menu/MenuGuiComponentGeneric")
+SBLT_CUS:require("lib/managers/menu/MultiProfileItemGui")
+SBLT_CUS:require("lib/managers/menu/NewHeistsGui")
+SBLT_CUS:require("lib/managers/menu/SearchBoxGuiObject")
 
 if type(MenuComponentManager.run_on_all_live_components) == "function" then
 	return

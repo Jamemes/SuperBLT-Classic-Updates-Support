@@ -67,7 +67,7 @@ if F == "menuinput" then
 		end
 	end)
 elseif F == "textboxgui" then
-	require("lib/managers/menu/ButtonBoxGui")
+	SBLT_CUS:require("lib/managers/menu/ButtonBoxGui")
 elseif F == "systemmenumanager" then
 	core:module("SystemMenuManager")
 	if type(GenericSystemMenuManager.show_buttons) ~= "function" then

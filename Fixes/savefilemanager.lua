@@ -1,3 +1,4 @@
+local game_version = SBLT_CUS:game_version()
 local reserved = {
 	["1.6.2"] = 11,
 	["1.15.1"] = 37,
@@ -31,7 +32,7 @@ end
 local function load_progress_slot()
 	local file, err = io.open("PROGRESS_SLOT.txt", "r")
 	local function set_slots()
-		local version_slot = reserved[game_version()]
+		local version_slot = reserved[current_version]
 		if version_slot then
 			SavefileManager.PROGRESS_SLOT = version_slot
 			SavefileManager.BACKUP_SLOT = version_slot
@@ -45,8 +46,8 @@ local function load_progress_slot()
 		io.stderr:write(err .. "\n")
 		set_slots()
 		
-		if not SavefileManager._slots_per_version[game_version()] then		
-			SavefileManager._slots_per_version[game_version()] = SavefileManager.PROGRESS_SLOT
+		if not SavefileManager._slots_per_version[game_version] then		
+			SavefileManager._slots_per_version[game_version] = SavefileManager.PROGRESS_SLOT
 			SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 		end
 		
@@ -67,7 +68,7 @@ local function load_progress_slot()
 	
 	for version, slot in pairs(SavefileManager._slots_per_version) do
 		slot = tonumber(slot)
-		if version == game_version() and string.len(tostring(slot)) == 2 then
+		if version == game_version and string.len(tostring(slot)) == 2 then
 			SavefileManager.PROGRESS_SLOT = slot
 			SavefileManager.BACKUP_SLOT = slot
 		end
@@ -77,8 +78,8 @@ local function load_progress_slot()
 		set_slots()
 	end
 	
-	if not SavefileManager._slots_per_version[game_version()] then		
-		SavefileManager._slots_per_version[game_version()] = SavefileManager.PROGRESS_SLOT
+	if not SavefileManager._slots_per_version[game_version] then		
+		SavefileManager._slots_per_version[game_version] = SavefileManager.PROGRESS_SLOT
 		SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 	end
 end
