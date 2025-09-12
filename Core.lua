@@ -154,6 +154,14 @@ local function fix_sblt(path)
 		}
 	}
 
+	todo["req/BLTModManager.lua"] = {
+		{
+			issue = 'call_on_next_update(callback(self, self, "_RunAutoCheckForUpdates"))',
+			fix = 'DelayedCalls:Add("DelayedCall_RunAutoCheckForUpdates", 0, function() self:_RunAutoCheckForUpdates() end)',
+			cause = SBLT_CUS:game_version(68.187)
+		}
+	}
+
 	for file_path, tbl in pairs(todo) do
 		change_lines(path .. file_path, tbl)
 	end
@@ -227,7 +235,7 @@ dohttpreq = function(path, func)
 	return data(path, override)
 end
 
-if not call_on_next_update then
+if type(call_on_next_update) ~= "function" then
 	function call_on_next_update(func, optional_key)
 		func()
 	end
