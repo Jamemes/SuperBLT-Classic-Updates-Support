@@ -1,4 +1,4 @@
-if not HudIconsTweakData.get_icon_or then
+if type(HudIconsTweakData.get_icon_or) ~= "function" then
 	function HudIconsTweakData:get_icon_or(icon_id, ...)
 		local icon_data = self[icon_id]
 

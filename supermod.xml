@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<mod>
+	<hooks>
+		<post hook_id="lib/tweak_data/tweakdata" script_path="Fixes/supermod_tweakdata.lua"/>
+	</hooks>
+
+	<assets base_path="assets/">
+		<group name="guis/dlcs/cee/textures/pd2/crime_spree/">
+			   <file :name="boosts_atlas.texture"/>
+		</group>
+	</assets>
+</mod>

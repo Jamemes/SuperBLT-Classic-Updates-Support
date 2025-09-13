@@ -1,3 +1,4 @@
+local game_version = SBLT_CUS:game_version()
 local reserved = {
 	["1.6.2"] = 11,
 	["1.15.1"] = 37,
@@ -31,7 +32,7 @@ end
 local function load_progress_slot()
 	local file, err = io.open("PROGRESS_SLOT.txt", "r")
 	local function set_slots()
-		local version_slot = reserved[game_version()]
+		local version_slot = reserved[current_version]
 		if version_slot then
 			SavefileManager.PROGRESS_SLOT = version_slot
 			SavefileManager.BACKUP_SLOT = version_slot
@@ -45,8 +46,8 @@ local function load_progress_slot()
 		io.stderr:write(err .. "\n")
 		set_slots()
 		
-		if not SavefileManager._slots_per_version[game_version()] then		
-			SavefileManager._slots_per_version[game_version()] = SavefileManager.PROGRESS_SLOT
+		if not SavefileManager._slots_per_version[game_version] then		
+			SavefileManager._slots_per_version[game_version] = SavefileManager.PROGRESS_SLOT
 			SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 		end
 		
@@ -67,7 +68,7 @@ local function load_progress_slot()
 	
 	for version, slot in pairs(SavefileManager._slots_per_version) do
 		slot = tonumber(slot)
-		if version == game_version() and string.len(tostring(slot)) == 2 then
+		if version == game_version and string.len(tostring(slot)) == 2 then
 			SavefileManager.PROGRESS_SLOT = slot
 			SavefileManager.BACKUP_SLOT = slot
 		end
@@ -77,8 +78,8 @@ local function load_progress_slot()
 		set_slots()
 	end
 	
-	if not SavefileManager._slots_per_version[game_version()] then		
-		SavefileManager._slots_per_version[game_version()] = SavefileManager.PROGRESS_SLOT
+	if not SavefileManager._slots_per_version[game_version] then		
+		SavefileManager._slots_per_version[game_version] = SavefileManager.PROGRESS_SLOT
 		SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
 	end
 end
@@ -86,7 +87,7 @@ end
 load_progress_slot()
 
 -- pre-U27 save file fix
-if SavefileManager._meta_data_slot_detected_done_callback then
+if type(SavefileManager._meta_data_slot_detected_done_callback) == "function" then
 	function SavefileManager:_meta_data_slot_detected_done_callback()
 		self._loading_sequence = true
 		print("SavefileManager:_meta_data_slot_detected_done_callback", self._has_meta_list)
@@ -112,9 +113,9 @@ if SavefileManager._meta_data_slot_detected_done_callback then
 end
 
 -- pre-U46 save file fix
-if SavefileManager.clbk_result_iterate_savegame_slots then
+if type(SavefileManager.clbk_result_iterate_savegame_slots) == "function" then
 	function SavefileManager:clbk_result_iterate_savegame_slots(task_data, result_data)
-		print("[SavefileManager:clbk_result_iterate_savegame_slots]", inspect(task_data), inspect(result_data))
+		-- log("[SavefileManager:clbk_result_iterate_savegame_slots]", inspect(task_data), inspect(result_data))
 		if not self:_on_task_completed(task_data) then
 			return
 		end
@@ -122,7 +123,7 @@ if SavefileManager.clbk_result_iterate_savegame_slots then
 		local found_progress_slot
 		if type_name(result_data) == "table" then
 			for slot, slot_data in pairs(result_data) do
-				print("slot:", slot, "\n", inspect(slot_data))
+				-- log("slot:", slot, "\n", inspect(slot_data))
 				if slot == self.SETTING_SLOT then
 					self._save_slots_to_load[slot] = true
 					self:load_settings()

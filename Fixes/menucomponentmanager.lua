@@ -8,7 +8,7 @@ require("lib/managers/menu/MultiProfileItemGui")
 require("lib/managers/menu/NewHeistsGui")
 require("lib/managers/menu/SearchBoxGuiObject")
 
-if MenuComponentManager.run_on_all_live_components then
+if type(MenuComponentManager.run_on_all_live_components) == "function" then
 	return
 end
 
