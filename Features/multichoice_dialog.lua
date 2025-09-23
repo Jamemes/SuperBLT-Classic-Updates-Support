@@ -102,7 +102,29 @@ elseif F == "systemmenumanager" then
 				self._counter_time = self._counter[1]
 			end
 		end
-	
+
+		function ButtonsDialog:mouse_pressed(o, button, x, y)
+			if button == Idstring("0") then
+				local x, y = managers.mouse_pointer:convert_1280_mouse_pos(x, y)
+
+				if self._panel_script:check_grab_scroll_bar(x, y) then
+					return
+				end
+
+				for i, panel in ipairs(self._panel_script._text_box_buttons_panel:children()) do
+					if panel.child and panel:inside(x, y) then
+						self:button_pressed_callback()
+
+						return
+					end
+				end
+			elseif button == Idstring("mouse wheel down") then
+				return self._panel_script:mouse_wheel_down(x, y)
+			elseif button == Idstring("mouse wheel up") then
+				return self._panel_script:mouse_wheel_up(x, y)
+			end
+		end
+
 		GenericSystemMenuManager.BUTTON_DIALOG_CLASS = ButtonsDialog
 		GenericSystemMenuManager.GENERIC_BUTTON_DIALOG_CLASS = ButtonsDialog
 
