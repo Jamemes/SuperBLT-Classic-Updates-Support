@@ -3,7 +3,7 @@ if type(BaseNetworkSession.peer_by_unit) ~= "function" then
 		local wanted_key = unit:key()
 
 		for _, peer in pairs(self:all_peers()) do
-			local test_unit = peer:unit()
+			local test_unit = peer._unit
 
 			if alive(test_unit) and test_unit:key() == wanted_key then
 				return peer
