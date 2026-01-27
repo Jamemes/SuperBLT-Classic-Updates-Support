@@ -85,158 +85,19 @@ end
 
 SBLT_CUS:OverrideRequire()
 
-local function change_lines(path, problems)
-	local file = io.open(path, 'r')
-	if not file or not problems or not #problems == 0 then
-		return
-	end
-
-	local changes = false
-	local strings = {}
-	local str_file = ""
-	for line in file:lines() do
-		str_file = str_file .. line .. '\n'
-	end
-	file:close()
-	
-	for _, problem in pairs(problems) do
-		problem.fix = problem.fix:gsub("%p", function(s) return '%' .. s end)
-		problem.issue = problem.issue:gsub("%p", function(s) return '%' .. s end)
-		
-		local fix, fixed = string.gsub(str_file, problem.issue, problem.fix)
-		local unfix, unfixed = string.gsub(str_file, problem.fix, problem.issue)
-		
-		if not problem.cause then
-			if fixed > 0 and unfixed <= 0 then
-				str_file = fix
-				changes = true
-			end
-		elseif problem.cause then
-			if unfixed > 0 and fixed <= 0 then
-				str_file = unfix
-				changes = true
-			end
-		end
-	end
-
-	if changes then
-		file = io.open(path, 'w')
-		file:write(str_file)
-		file:close()
-	end
-end
-
-local function fix_sblt(path)
-	local todo = {}
-	todo["req/BLTMod.lua"] = {
-		{
-			issue = 'if file.FileExists(Application:nice_path(self:GetModImagePath())) then',
-			fix = 'if file.FileExists(Application:nice_path(self:GetModImagePath())) and not self:GetModImagePath():find(".png") and not self:GetModImagePath():find(".tga") then',
-			cause = SBLT_CUS:game_version(54.7)
-		}
-	}
-
-	todo["lua/SystemMenuManager.lua"] = {
-		{
-			issue = 'require("lib/managers/dialogs/SpecializationDialog")',
-			fix = '--[[require("lib/managers/dialogs/SpecializationDialog")]]--',
-			cause = SBLT_CUS:game_version(16.1)
-		}
-	}
-
-	todo["req/ui/BLTNotificationsGui.lua"] = {
-		{
-			issue = 'local page_button = self._buttons_panel:bitmap({',
-			fix = [[local page_button = self._buttons_panel:bitmap({
-			alpha = 0,]],
-			cause = false -- let make sure it is always on
-		},
-		{
-			issue = 'managers.experience:cash_string',
-			fix = 'managers.experience:experience_string',
-			cause = false -- let make sure it is always on
-		}
-	}
-
-	todo["req/ui/BLTModsGui.lua"] = {
-		{
-			issue = 'managers.experience:cash_string',
-			fix = 'managers.experience:experience_string',
-			cause = false -- let make sure it is always on
-		}
-	}
-
-	todo["req/BLTUpdate.lua"] = {
-		{
-			issue = [[if managers.network and managers.network.account and managers.network.account:is_overlay_enabled() then
-		managers.network.account:overlay_activate("url", url)]],
-			fix = [[if managers.network and managers.network.account and Steam.overlay_activate then
-		Steam:overlay_activate("url", url)]],
-			cause = SBLT_CUS:game_version(139.193)
-		}
-	}
-
-	todo["req/supermod/BLTSuperMod.lua"] = {
-		{
-			issue = 'local xml = blt.parsexml',
-			fix = 'local xml = blt and blt.parsexml',
-			cause = false -- let make sure it is always on
-		}
-	}
-
-	todo["req/xaudio/XAudio.lua"] = {
-		{
-			issue = 'blt',
-			fix = '--blt',
-			cause = blt
-		}
-	}
-
-	todo["req/xaudio/XAudioMovement.lua"] = {
-		{
-			issue = 'local l = blt.xaudio.listener',
-			fix = 'local l = blt and blt.xaudio.listener',
-			cause = false -- let make sure it is always on
-		},
-		{
-			issue = 'if not blt.xaudio.issetup() then',
-			fix = 'if not (blt and blt.xaudio.issetup()) then',
-			cause = false -- let make sure it is always on
-		}
-	}
-
-	todo["req/BLTModManager.lua"] = {
-		{
-			issue = 'call_on_next_update(callback(self, self, "_RunAutoCheckForUpdates"))',
-			fix = 'DelayedCalls:Add("DelayedCall_RunAutoCheckForUpdates", 0, function() self:_RunAutoCheckForUpdates() end)',
-			cause = SBLT_CUS:game_version(68.187)
-		}
-	}
-
-	for file_path, tbl in pairs(todo) do
-		change_lines(path .. file_path, tbl)
-	end
-end
-
-for i, mod in ipairs(BLT.Mods:Mods()) do
-	if mod:GetName() == "SuperBLT" then
-		fix_sblt(mod:GetPath())
-	end
-end
-
---if not file.FileExists then
+if type(file.FileExists) ~= "function" then
 	function file.FileExists(path)
 		return os.rename(path, path)
 	end
---end
+end
 
---if not file.DirectoryExists then
+if type(file.DirectoryExists) ~= "function" then
 	function file.DirectoryExists(path)
 		return os.rename(path, path)
 	end
---end
+end
 
-if not file.MoveDirectory then
+if type(file.MoveDirectory) ~= "function" then
 	function file.MoveDirectory(prev, path)
 		local download_name = ""
 		local mod_name = ""

@@ -1,43 +1,17 @@
 tweak_data.screen_colors.dark_bg = Color(0.65, 0, 0, 0)
-tweak_data.hud_icons.csb_pagers = {
-	texture = "guis/textures/pd2/skilltree/icons_atlas",
-	texture_rect = {
-		64 * 6,
-		64 * 2,
-		64,
-		64
-	}
-}
-
-tweak_data.hud_icons.csb_locks = {
-	texture = "guis/textures/pd2/skilltree/icons_atlas",
-	texture_rect = {
-		64,
-		64 * 4,
-		64,
-		64
-	}
-}
-
-tweak_data.hud_icons.csb_stamina = {
-	texture = "guis/textures/pd2/skilltree/icons_atlas",
-	texture_rect = {
-		0,
-		64 * 7,
-		64,
-		64
-	}
-}
-
-tweak_data.hud_icons.csb_throwables = {
-	texture = "guis/textures/pd2/hud_progress_32px",
-	texture_rect = {
-		0,
-		0,
-		32,
-		32
-	}
-}
+if (blt and blt.db_create_entry) or (DB and DB.create_entry) then
+	local boosts_atlas = "guis/dlcs/cee/textures/pd2/crime_spree/boosts_atlas"
+	tweak_data.hud_icons.csb_pagers = { texture = boosts_atlas, texture_rect = { 128 * 6, 128 * 1, 128, 128 } }
+	tweak_data.hud_icons.csb_locks = { texture = boosts_atlas, texture_rect = { 128 * 1, 128 * 2, 128, 128 } }
+	tweak_data.hud_icons.csb_stamina = { texture = boosts_atlas, texture_rect = { 128 * 1, 128 * 0, 128, 128 } }
+	tweak_data.hud_icons.csb_throwables = { texture = boosts_atlas, texture_rect = { 128 * 1, 128 * 1, 128, 128 } }
+else
+	local icons_atlas = "guis/textures/pd2/skilltree/icons_atlas"
+	tweak_data.hud_icons.csb_pagers = { texture = icons_atlas, texture_rect = { 64 * 6, 64 * 2, 64, 64 } }
+	tweak_data.hud_icons.csb_locks = { texture = icons_atlas, texture_rect = { 64, 64 * 4, 64, 64 } }
+	tweak_data.hud_icons.csb_stamina = { texture = icons_atlas, texture_rect = { 0, 64 * 7, 64, 64 } }
+	tweak_data.hud_icons.csb_throwables = { texture = "guis/textures/pd2/hud_progress_32px", texture_rect = { 0, 0, 32, 32 } }
+end
 
 if not tweak_data.hud_icons.scrollbar_arrow then
 	tweak_data.hud_icons.scrollbar_arrow = {
