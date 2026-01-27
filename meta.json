@@ -1,4 +1,10 @@
 [
+	{
+        "ident": "payday2blt-cus",
+        "version": "1.4.8 [CUS-1]",
+        "patchnotes_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/commits/base",
+        "download_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/archive/refs/heads/base.zip"
+    },
     {
         "ident": "SuperBLT-CUS",
         "version": "8.1.1.2",
