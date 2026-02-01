@@ -2,18 +2,18 @@ _G.SBLT_CUS = {}
 SBLT_CUS.path = ModPath
 
 if not (blt and blt.db_create_entry) then
-	if not os.rename("mods/saves", "mods/saves") then
+	if not SystemFS:exists("mods/saves") then
 		log('creating "mods/saves"')
 		os.execute('mkdir "mods/saves"')
 	end
 		 
-	if not os.rename("mods/downloads", "mods/downloads") then
-		log('creating "mods/downloads"')
+	if not SystemFS:exists("mods/downloads") then
+		log('creating "mods/saves"')
 		os.execute('mkdir "mods/downloads"')
 	end
 
-	if not os.rename("mods/logs", "mods/logs") then
-		log('creating "mods/logs"')
+	if not SystemFS:exists("mods/logs") then
+		log('creating "mods/saves"')
 		os.execute('mkdir "mods/logs"')
 	end
 end
