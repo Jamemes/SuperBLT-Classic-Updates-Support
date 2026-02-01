@@ -105,7 +105,9 @@ elseif F == "systemmenumanager" then
 
 		function ButtonsDialog:mouse_pressed(o, button, x, y)
 			if button == Idstring("0") then
-				local x, y = managers.mouse_pointer:convert_1280_mouse_pos(x, y)
+				if type(managers.mouse_pointer.convert_1280_mouse_pos) ~= "nil" then
+					x, y = managers.mouse_pointer:convert_1280_mouse_pos(x, y)
+				end
 
 				if self._panel_script:check_grab_scroll_bar(x, y) then
 					return

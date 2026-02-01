@@ -515,6 +515,38 @@ function TextBoxGui:_setup_scroll_bar(main, scroll_panel, buttons_panel, top_lin
 	scroll_bar:set_center_x(scroll_down_indicator_arrow:center_x())
 end
 
+function TextBoxGui:_check_scroll_indicator_states()
+	local info_area = self._text_box:child("info_area")
+	local scroll_panel = info_area:child("scroll_panel")
+	local scroll_text = scroll_panel:child("text")
+
+	if not self._up_alpha then
+		self._up_alpha = {
+			current = 0
+		}
+
+		self._text_box:child("scroll_up_indicator_shade"):set_alpha(self._up_alpha.current)
+		self._text_box:child("scroll_up_indicator_arrow"):set_color(self._text_box:child("scroll_up_indicator_arrow"):color():with_alpha(self._up_alpha.current))
+	end
+
+	if not self._down_alpha then
+		self._down_alpha = {
+			current = 1
+		}
+
+		self._text_box:child("scroll_down_indicator_shade"):set_alpha(self._down_alpha.current)
+		self._text_box:child("scroll_down_indicator_arrow"):set_color(self._text_box:child("scroll_down_indicator_arrow"):color():with_alpha(self._down_alpha.current))
+	end
+
+	self._up_alpha.target = scroll_text:top() < 0 and 1 or 0
+	self._down_alpha.target = scroll_panel:h() < scroll_text:bottom() and 1 or 0
+	local up_arrow = self._text_box:child("scroll_up_indicator_arrow")
+	local scroll_bar = self._text_box:child("scroll_bar")
+	local sh = scroll_text:h() ~= 0 and scroll_text:h() or 1
+
+	scroll_bar:set_top(up_arrow:bottom() - scroll_text:top() * (scroll_panel:h() - up_arrow:h() * 2 - 16) / sh)
+end
+
 function ButtonBoxGui:_override_info_area_size(info_area, scroll_panel, buttons_panel)
 	info_area:set_h(math.min(scroll_panel:bottom() + buttons_panel:h() + 10 + 5, 620))
 
