@@ -276,7 +276,14 @@ function BLTMod:GetModImage()
 	end
 
 	-- Check if the file exists on disk and generate if it does
-	if file.FileExists(Application:nice_path(self:GetModImagePath())) then
+	local able_to_use = nil
+	if not managers.workshop then
+		able_to_use = string.sub(tostring(self.image_path), -4, -1) == ".dds" or string.sub(tostring(self.image_path), -8, -1) == ".texture"
+	else
+		able_to_use = true
+	end
+
+	if file.FileExists(Application:nice_path(self:GetModImagePath())) and able_to_use then
 		local type_texture_id = Idstring("texture")
 		local path = self:GetModImagePath()
 		local texture_id = Idstring(path)

@@ -6,7 +6,7 @@
 	"version" : "1.4.8 [CUS-1]",
 	"blt_version" : 2,
 	"priority" : 1001,
-	"image" : "blt.png",
+	"image" : "blt.dds",
 	"color" : "255 0 255",
 	"undisablable" : true,
 	"is_library" : true,

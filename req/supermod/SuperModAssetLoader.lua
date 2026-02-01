@@ -221,7 +221,7 @@ _flush_assets = function(dres)
 		-- log("Loading " .. asset.dbpath .. " " .. asset.extension .. " from " .. path)
 
 		if not asset._entry_created then
-			if blt then
+			if blt and blt.ignoretweak then
 				blt.ignoretweak(dbpath, ext)
 			end
 			BLT.AssetManager:CreateEntry(dbpath, ext, path)

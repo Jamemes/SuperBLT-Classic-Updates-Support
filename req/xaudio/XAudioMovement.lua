@@ -1,6 +1,6 @@
 -- Move the listener around to follow the player
 
-local l = blt and blt.xaudio.listener
+local l = blt and blt.xaudio and blt.xaudio.listener
 
 local mvec_cam_fwd = Vector3()
 local mvec_cam_up = Vector3()
@@ -8,7 +8,7 @@ local mvec_cam_up = Vector3()
 Hooks:PostHook(PlayerMovement, "update", "XAudioUpdateListenerPosition", function(self, unit, t, dt)
 	XAudio._player_unit = self._unit
 
-	if not (blt and blt.xaudio.issetup()) then
+	if not (blt and blt.xaudio and blt.xaudio.issetup()) then
 		return
 	end
 
@@ -39,7 +39,7 @@ Hooks:PostHook(PlayerMovement, "update", "XAudioUpdateListenerPosition", functio
 end)
 
 Hooks:Add("GameSetupUpdate", "XAudioGameSetupUpdateCamera", function(t, dt)
-	if not (blt and blt.xaudio.issetup()) then
+	if not (blt and blt.xaudio and blt.xaudio.issetup()) then
 		return
 	end
 

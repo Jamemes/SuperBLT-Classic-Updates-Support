@@ -25,7 +25,7 @@ BLT:Require("req/xaudio/VoicelineManager")
 -- You can get it using blt.xaudio.getworldscale() if you need to use it
 -- This means we can use positions from the game without worrying about
 -- unit conversion or anything.
-if blt then
+if blt and blt.xaudio then
 	blt.xaudio.setworldscale(100)
 
 	-- Delete any existing sources from the last heist/menu

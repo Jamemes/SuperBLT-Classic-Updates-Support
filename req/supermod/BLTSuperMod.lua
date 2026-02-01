@@ -52,7 +52,7 @@ function BLTSuperMod.try_load(mod, file_name)
 		file:close()
 
 		-- Parse it
-		local xml = blt and blt.parsexml(file_contents) or parse_xml(file_contents)
+		local xml = blt and blt.parsexml and blt.parsexml(file_contents) or parse_xml(file_contents)
 		if not xml then
 			return
 		end
