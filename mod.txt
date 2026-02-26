@@ -3,7 +3,7 @@
 	"description" : "The collection of Lua files that allow the BLT hook to function.",
 	"author" : "ZNix, James Wilkinson",
 	"contact" : "znix@znix.xyz",
-	"version" : "1.4.8 [CUS-2]",
+	"version" : "1.4.8 [CUS-3]",
 	"blt_version" : 2,
 	"priority" : 1001,
 	"image" : "blt.dds",
@@ -28,6 +28,7 @@
 		{ "hook_id" : "lib/entry", "script_path" : "req/utils/QuickMenu.lua" }
 	],
 	"hooks" : [
+		{"hook_id" : "lib/managers/localizationmanager",						"script_path" : "fixes/localizationmanager.lua"},
 		{"hook_id" : "lib/managers/chatmanager",								"script_path" : "fixes/chatmanager.lua"},
 		{"hook_id" : "lib/network/base/basenetworksession",						"script_path" : "fixes/basenetworksession.lua"},
 		{"hook_id" : "lib/managers/menu/items/menuitemcustomizecontroller", 	"script_path" : "fixes/menuitemcustomizecontroller.lua"},
