@@ -14,9 +14,6 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 		menu_game_restart = "Restart the game",
 		dialog_check_press_any_key_stuck = "Incompatibility of the save file",
 		dialog_check_press_any_key_stuck_desc = "If you see this message, then most likely your save file is incompatible with this version of the game.\nIf you click 'Yes', you can enter the main menu despite the error, but then the game may encounter bugs that will cause errors or crashes that interfere with the game.\nTo fix this, you need to change the save file in the game settings in the 'Progress Slot' item, type the number of the desired slot or click 'Quit' and type it in the file 'PROGRESS_SLOT.txt' after game version numbers - ".. game_ver .. ".\n\nWhat you choose?",
-		dialog_preplanning_rebuy_assets = "Do you want to rebuy available assets for $price; + $favor; favors?",
-		menu_item_preplanning_rebuy_desc = "Rebuy the preplanning assets purchased in the previous game",
-		menu_item_preplanning_rebuy = "Rebuy Assets",
 	})
 
 	if Idstring("russian"):key() == SystemInfo:language():key() then
@@ -32,9 +29,6 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 			menu_game_restart = "Перезапустить игру",
 			dialog_check_press_any_key_stuck = "Несовместимость файла сохренения",
 			dialog_check_press_any_key_stuck_desc = "Если вы видите это сообщение, то скорее всего ваш файл сохренений несовместим с данной версией игры.\nЕсли вы нажмете 'Да', вы можете войти в главное меню не смотря на ошибку, но тогда в игре могут встретятся баги, которые будут вызывать ошибки или вылеты мешающие играть.\nЧтобы исправить это вам нужно сменить файл сохранения в настройках игры в пункте 'Слот прогресса' прописать номер нужного слота или нажать 'Выйти' и прописать в файле 'PROGRESS_SLOT.txt' вручную в строке после обозначения версии игры - ".. game_ver .. ".\n\n Что вы выбераете?",
-			dialog_preplanning_rebuy_assets = "Вы действительно хотите снова купить все доступные активы за $price; + $favor: услуг?",
-			menu_item_preplanning_rebuy_desc = "Снова купить активы препланирования из предыдущей игры",
-			menu_item_preplanning_rebuy = "Снова купить активы",
 		})
 	end
 end)
@@ -60,7 +54,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_PROGRESS_SLOT_input", function(me
 			new_item:set_callback_handler(node.callback_handler)
 		end
 		
-		new_item._input_text = tostring(SavefileManager.PROGRESS_SLOT)
+		new_item._input_text = ""
 		
 		local pos = 1
 		for id, item in pairs(node._items) do
@@ -76,37 +70,25 @@ end)
 function MenuCallbackHandler:change_PROGRESS_SLOT_call(item)
 	if not item._editing then
 		item._input_text = item._input_text:gsub('%D', "")
-		if item._input_text ~= "" and SavefileManager._forbidden_slots[item._input_text] then
-			local dialog_data = {}
-			dialog_data.title = SavefileManager._forbidden_slots[item._input_text]
-			dialog_data.text = managers.localization:text("menu_slot_is_forbidden_text")
-			local ok_button = {}
-			ok_button.cancel_button = true
-			ok_button.text = managers.localization:text("dialog_ok")
-			dialog_data.button_list = {ok_button}
-			managers.system_menu:show(dialog_data)
-			item._input_text = tostring(SavefileManager.PROGRESS_SLOT)
-		elseif item._input_text ~= "" and item._input_text ~= tostring(SavefileManager.PROGRESS_SLOT) and string.len(item._input_text) == 2 then
+		if item._input_text ~= "" and item._input_text ~= "1" and string.len(item._input_text) <= 2 and tonumber(item._input_text) then
 			local dialog_data = {}
 			dialog_data.title = managers.localization:text("menu_slot_change")
 			dialog_data.text = managers.localization:text("menu_slot_change_text")
 			local yes_button = {}
 			yes_button.text = managers.localization:text("menu_game_restart")
 			yes_button.callback_func = function()
-				SavefileManager._slots_per_version[game_ver] = item._input_text
-				SavefileManager:save_progress_slots(SavefileManager._slots_per_version)
-				setup:quit()
+				managers.savefile:port_progress_from_another_savefile(tonumber(item._input_text))
 			end
 			local no_button = {}
 			no_button.cancel_button = true
 			no_button.text = managers.localization:text("menu_back")
 			no_button.callback_func = function()
-				item._input_text = tostring(SavefileManager.PROGRESS_SLOT)
+				item._input_text = tostring(item._input_text)
 			end
 			dialog_data.button_list = {yes_button, no_button}
 			managers.system_menu:show(dialog_data)
 		else
-			item._input_text = tostring(SavefileManager.PROGRESS_SLOT)
+			item._input_text = tostring(item._input_text)
 		end
 	end
 end
