@@ -47,8 +47,9 @@ local function make_fine_text(text)
 	return x, y, w, h
 end
 
-SavefileManager = class()
-function SavefileManager:init()
+NewSavefileManager = NewSavefileManager or class()
+SavefileManager = NewSavefileManager or class()
+function NewSavefileManager:init()
 	Global.savefile_manager = Global.savefile_manager or {}
 	Global.savefile_manager.save_slots = Global.savefile_manager.save_slots or {}
 	Global.savefile_manager.backup_save_enabled = true
@@ -61,28 +62,30 @@ function SavefileManager:init()
 	self:load_progress()
 end
 
-function SavefileManager:save_progress(save_system)
-	local save_slot = Global.savefile_manager.save_slots[game_version] or {}
-	for _, class in pairs(managers_list) do
-		if managers[class] then
-			if type(managers[class].save) == "function"  then
-				managers[class]:save(save_slot)
-			end
+function NewSavefileManager:save_progress(save_system, ignore_current_progress)
+	if not ignore_current_progress then
+		local save_slot = Global.savefile_manager.save_slots[game_version] or {}
+		for _, class in pairs(managers_list) do
+			if managers[class] then
+				if type(managers[class].save) == "function"  then
+					managers[class]:save(save_slot)
+				end
 
-			if type(managers[class].save_savedata) == "function"  then
-				managers[class]:save_savedata(save_slot)
-			end
+				if type(managers[class].save_savedata) == "function"  then
+					managers[class]:save_savedata(save_slot)
+				end
 
-			if type(managers[class].save_settings) == "function"  then
-				managers[class]:save_settings(save_slot)
-			end
+				if type(managers[class].save_settings) == "function"  then
+					managers[class]:save_settings(save_slot)
+				end
 
-			if type(managers[class].save_job_values) == "function"  then
-				managers[class]:save_job_values(save_slot)
-			end
+				if type(managers[class].save_job_values) == "function"  then
+					managers[class]:save_job_values(save_slot)
+				end
 
-			if type(managers[class].save_profile) == "function"  then
-				managers[class]:save_profile(save_slot)
+				if type(managers[class].save_profile) == "function"  then
+					managers[class]:save_profile(save_slot)
+				end
 			end
 		end
 	end
@@ -92,7 +95,7 @@ function SavefileManager:save_progress(save_system)
 			queued_in_save_manager = true,
 			date_format = "%c",
 			max_queue_size = 1,
-			first_slot = 1,
+			first_slot = 100,
 			task_type = 3,
 			subtitle = "",
 			details = "",
@@ -101,7 +104,7 @@ function SavefileManager:save_progress(save_system)
 		}, function() end)
 	elseif type(NewSave) == "userdata" then
 		local param_map = {
-			save_slots = 1,
+			save_slots = 100,
 			save_system = save_system or "steam_cloud"
 		}
 		local save_data = NewSave:create_save_data()
@@ -111,12 +114,12 @@ function SavefileManager:save_progress(save_system)
 		SavefileTaskHandler:new(NewSave:save(save_data, param_map), 3, function() end, nil, "progress")
 	end
 
-	if Global.savefile_manager.progress_loaded then
+	if self._progress_loaded then
 		self:show_icon(utf8.to_upper(managers.localization:text("savefile_saving")))
 	end
 end
 
-function SavefileManager:get_progress_from_older_version_slot(game_ver)
+function NewSavefileManager:get_progress_from_older_version_slot(game_ver)
     if not tonumber(game_ver) then
         return
     end
@@ -132,18 +135,42 @@ function SavefileManager:get_progress_from_older_version_slot(game_ver)
     return donor_slot, donor_data
 end
 
-function SavefileManager:perform_load(cache)
+function NewSavefileManager:perform_load(cache)
 	Global.savefile_manager.save_slots = cache
 
 	if not cache[game_version] then
 		local donor_slot, donor_data = self:get_progress_from_older_version_slot(game_version)
+		local hint_dialog = {
+			text = "New save file system containts all progress in a single save file, one for each game version. You have to port the progress from another save file manually, all you need to do is goto options and find 'Port the Progress' option, and enter the slot you played on, from 0 to 99.\n\nVanilla - 98\nUpdate 76 - 76\nUpdate 37.1 - 37\nUpdate 24.2 - 11\nDefault slot for all updates - 69",
+			button_list = {{
+				text = managers.localization:text("dialog_ok")
+			}}
+		}
 
 		if donor_slot and donor_data then
 			local old_type = "0." .. tostring(donor_slot)
 			local current_type = "1." .. tostring(donor_slot)
-			local game_version_str = tweak_data.updates_table[current_type] or tweak_data.updates_table[old_type] or tostring(donor_slot)
-			self:show_icon(utf8.to_upper("Progress Fetched") .. "\nUpdate " .. game_version_str, true)
-			make_fine_text(self._gui_script.gui_text)
+			local ver_str = tweak_data.updates_table[current_type] or tweak_data.updates_table[old_type] or tostring(donor_slot)
+			ver_str = ver_str ~= "Release" and "Update " .. ver_str or ver_str
+			managers.system_menu:show({
+				text = "Progress is fetched from " .. ver_str,
+				button_list = {{
+					text = managers.localization:text("dialog_ok"),
+					callback_func = function()
+						managers.system_menu:show(hint_dialog)
+					end
+				}}
+			})
+		else
+			managers.system_menu:show({
+				text = "Progress is not found.",
+				button_list = {{
+					text = managers.localization:text("dialog_ok"),
+					callback_func = function()
+						managers.system_menu:show(hint_dialog)
+					end
+				}}
+			})
 		end
 
 		Global.savefile_manager.save_slots[game_version] = donor_data or {}
@@ -176,15 +203,19 @@ function SavefileManager:perform_load(cache)
 		end
 	end
 
-	Global.savefile_manager.progress_loaded = true
+	self._progress_loaded = true
+
+	if managers.menu_scene then
+		managers.menu_scene:on_blackmarket_reset()
+	end
 end
 
-function SavefileManager:load_progress(save_system)
+function NewSavefileManager:load_progress(save_system)
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:load({
 			queued_in_save_manager = true,
 			task_type = 2,
-			first_slot = 1,
+			first_slot = 100,
 			save_system = save_system or "steam_cloud"
 		}, function(_, result_data)
 			if type_name(result_data) == "table" then
@@ -200,19 +231,21 @@ function SavefileManager:load_progress(save_system)
 		end)
 	elseif type(NewSave) == "userdata" then
 		local task = NewSave:load({
-			save_slots = 1,
+			save_slots = 100,
 			save_system = save_system or "steam_cloud"
 		})
 
 		self._task_handler = SavefileTaskHandler:new(task, 2, function(save_data)
 			if save_data:status() == SaveData.OK then
 				self:perform_load(save_data:information())
+			else
+				self:perform_load({})
 			end
 		end, function() end)
 	end
 end
 
-function SavefileManager:show_icon(text, loading)
+function NewSavefileManager:show_icon(text, loading)
 	if self._loading_icon then
 		return
 	end
@@ -225,7 +258,7 @@ function SavefileManager:show_icon(text, loading)
 	self._gui_script.indicator:animate(self._gui_script.saving)
 end
 
-function SavefileManager:update(t, dt)
+function NewSavefileManager:update(t, dt)
 	while self._task_handler do
 		if self._task_handler:update() then
 			self._task_handler:destroy()
@@ -242,7 +275,7 @@ function SavefileManager:update(t, dt)
 
 	if self._show_gui_time then
 		local main_time = TimerManager:main():time()
-		local check_t = 3
+		local check_t = self._loading_icon and 5 or 3
 		if check_t < main_time - self._show_gui_time then
 			self._hide_gui_time = main_time
 		elseif main_time - self._show_gui_time > 1 then
@@ -254,37 +287,82 @@ function SavefileManager:update(t, dt)
 	end
 end
 
-function SavefileManager:port_progress_from_another_savefile(slot, save_system)
-	local task = NewSave:load({
-		save_slots = slot,
-		save_system = save_system or "steam_cloud"
-	})
+function NewSavefileManager:port_progress_from_another_savefile(slot, save_system)
+	if type(SaveGameManager) == "userdata" then
+		SaveGameManager:load({
+			queued_in_save_manager = true,
+			task_type = 2,
+			first_slot = slot,
+			save_system = save_system or "steam_cloud"
+		}, function(_, result_data)
+			if type_name(result_data) == "table" then
+				for file_slot, slot_data in pairs(result_data) do
+					if file_slot == slot and slot_data.status == "OK" then
+						Global.savefile_manager.save_slots[game_version] = slot_data.data
+						self:save_progress()
+						setup:quit()
 
-	self._task_handler = SavefileTaskHandler:new(task, 2, function(save_data)
-		if save_data:status() == SaveData.OK then
-			Global.savefile_manager.save_slots[game_version] = save_data:information()
-			self:save_progress()
-			setup:quit()
-		end
-	end, function() end)
+						break
+					end
+				end
+			end
+		end)
+	elseif type(NewSave) == "userdata" then
+		local task = NewSave:load({
+			save_slots = slot,
+			save_system = save_system or "steam_cloud"
+		})
+
+		self._task_handler = SavefileTaskHandler:new(task, 2, function(save_data)
+			if save_data:status() == SaveData.OK then
+				local status = save_data:information()
+				if status.UpgradesManager then
+					local default = {}
+					managers.user:save(default)
+					-- managers.skilltree:save(default)
+					-- managers.blackmarket:save(default)
+
+					Global.savefile_manager.save_slots[game_version] = save_data:information()
+					Global.savefile_manager.save_slots[game_version].UserManager = default.UserManager
+
+					-- default.blackmarket.inventory = Global.savefile_manager.save_slots[game_version].blackmarket.inventory
+
+					self:save_progress(nil, true)
+					setup:quit()
+				else
+					managers.system_menu:show({
+						title = "Error",
+						text = "This slot cannot be used. May be a setting slot.",
+						button_list = {{text = managers.localization:text("dialog_ok")}}
+					})
+				end
+			else
+				managers.system_menu:show({
+					title = "Error",
+					text = "Content from the save file can't be loaded.\n\nError message: " .. table.get_key(SaveData, save_data:status()),
+					button_list = {{text = managers.localization:text("dialog_ok")}}
+				})
+			end
+		end, function() end)
+	end
 end
 
-function SavefileManager:is_in_loading_sequence()
-	return Global.savefile_manager and not Global.savefile_manager.progress_loaded
+function NewSavefileManager:is_in_loading_sequence()
+	return not self._progress_loaded
 end
 
-function SavefileManager:is_active() end
-function SavefileManager:savefile_access() end
-function SavefileManager:add_load_sequence_done_callback_handler() end
-function SavefileManager:setting_changed() end
-function SavefileManager:add_load_done_callback() end
-function SavefileManager:save_setting() end
-function SavefileManager:add_active_changed_callback() end
-function SavefileManager:break_loading_sequence() end
-function SavefileManager:save_game() end
-function SavefileManager:storage_changed() end
-function SavefileManager:active_user_changed() end
-function SavefileManager:check_space_required() end
-function SavefileManager:fetch_savegame_hdd_space_required() end
-function SavefileManager:load_settings() end
-function SavefileManager:paused_update() end
+function NewSavefileManager:is_active() end
+function NewSavefileManager:savefile_access() end
+function NewSavefileManager:add_load_sequence_done_callback_handler() end
+function NewSavefileManager:setting_changed() end
+function NewSavefileManager:add_load_done_callback() end
+function NewSavefileManager:save_setting() end
+function NewSavefileManager:add_active_changed_callback() end
+function NewSavefileManager:break_loading_sequence() end
+function NewSavefileManager:save_game() end
+function NewSavefileManager:storage_changed() end
+function NewSavefileManager:active_user_changed() end
+function NewSavefileManager:check_space_required() end
+function NewSavefileManager:fetch_savegame_hdd_space_required() end
+function NewSavefileManager:load_settings() end
+function NewSavefileManager:paused_update() end

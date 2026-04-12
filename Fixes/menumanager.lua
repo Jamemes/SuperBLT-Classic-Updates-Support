@@ -6,8 +6,8 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 		menu_filter_search = "Search",
 		menu_button_hide = "Hide",
 		menu_button_show = "Show",
-		menu_PROGRESS_SLOT_help = string.format("%s (%s)", game_ver, game_update),
-		menu_PROGRESS_SLOT = "Progress Slot",
+		menu_PROGRESS_SLOT_help = string.format("%s  (Update: %s)", "Choose the slot from 0 to 99.", game_update),
+		menu_PROGRESS_SLOT = "Port the Progress",
 		menu_slot_change = "Change Progress Slot",
 		menu_slot_change_text = "In the order to change the progress slot you need to restart the game. Continue?",
 		menu_slot_is_forbidden_text = "This slot is used by current version of the game or gameplay overhauls.",
@@ -23,7 +23,8 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 			menu_button_hide = "Скрыть",
 			menu_button_show = "Показать",
 			menu_PROGRESS_SLOT = "Слот прогресса",
-			menu_slot_change = "Сменить слот прогресса",
+			menu_PROGRESS_SLOT_help = string.format("%s  (Обновление: %s)", "Выберите слот с 0 по 99.", game_update),
+			menu_slot_change = "Портировать прогресс",
 			menu_slot_change_text = "Чтобы изменить слот прогресса вам нужно перезапустить игру. Продолжить?",
 			menu_slot_is_forbidden_text = "Этот слот используется актуальной версией игры или модификациями.",
 			menu_game_restart = "Перезапустить игру",
@@ -33,19 +34,19 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 	end
 end)
 
-Hooks:Add("MenuManagerBuildCustomMenus", "_add_PROGRESS_SLOT_input", function(menu_manager, nodes)
+Hooks:Add("MenuManagerBuildCustomMenus", "_add_port_progress_from_savefile_input", function(menu_manager, nodes)
 	local node = nodes.options
 	if node then
 		local data_node = {
 			type = "MenuItemInput"
 		}
 		local params = {
-			name = "PROGRESS_SLOT",
-			text_id = "menu_PROGRESS_SLOT",
-			help_id = "menu_PROGRESS_SLOT_help",
+			name = "port_progress_from_savefile",
+			text_id = "menu_port_progress_from_savefile",
+			help_id = "menu_port_progress_from_savefile_help",
 			empty_gui_input_limit = 28,
 			input_limit = 2,
-			callback = "change_PROGRESS_SLOT_call"
+			callback = "port_progress_from_savefile_call"
 		}
 		local new_item = node:create_item(data_node, params)
 		
@@ -67,26 +68,26 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_PROGRESS_SLOT_input", function(me
 	end
 end)
 
-function MenuCallbackHandler:change_PROGRESS_SLOT_call(item)
+function MenuCallbackHandler:port_progress_from_savefile_call(item)
 	if not item._editing then
 		item._input_text = item._input_text:gsub('%D', "")
-		if item._input_text ~= "" and item._input_text ~= "1" and string.len(item._input_text) <= 2 and tonumber(item._input_text) then
-			local dialog_data = {}
-			dialog_data.title = managers.localization:text("menu_slot_change")
-			dialog_data.text = managers.localization:text("menu_slot_change_text")
-			local yes_button = {}
-			yes_button.text = managers.localization:text("menu_game_restart")
-			yes_button.callback_func = function()
-				managers.savefile:port_progress_from_another_savefile(tonumber(item._input_text))
-			end
-			local no_button = {}
-			no_button.cancel_button = true
-			no_button.text = managers.localization:text("menu_back")
-			no_button.callback_func = function()
-				item._input_text = tostring(item._input_text)
-			end
-			dialog_data.button_list = {yes_button, no_button}
-			managers.system_menu:show(dialog_data)
+		if item._input_text ~= "" and string.len(item._input_text) <= 2 and tonumber(item._input_text) then
+			managers.system_menu:show({
+				title = "Progress Port",
+				text = "",
+				button_list = {
+					{
+						text = "Port Progress",
+						callback_func = function()
+							managers.savefile:port_progress_from_another_savefile(tonumber(item._input_text))
+						 end,
+					},
+					{
+						text = managers.localization:text("menu_back"),
+						cancel_button = true
+					}
+				}
+			})
 		else
 			item._input_text = tostring(item._input_text)
 		end
