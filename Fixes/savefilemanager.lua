@@ -38,14 +38,14 @@ if _G.IS_VR then
 	table.insert(managers_list, 3, "vr")
 end
 
-local function make_fine_text(text)
-	local x, y, w, h = text:text_rect()
+-- local function make_fine_text(text)
+-- 	local x, y, w, h = text:text_rect()
 
-	text:set_size(w, h)
-	text:set_position(math.round(text:x()), math.round(text:y()))
+-- 	text:set_size(w, h)
+-- 	text:set_position(math.round(text:x()), math.round(text:y()))
 
-	return x, y, w, h
-end
+-- 	return x, y, w, h
+-- end
 
 NewSavefileManager = NewSavefileManager or class()
 SavefileManager = NewSavefileManager or class()
@@ -67,23 +67,23 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 		local save_slot = Global.savefile_manager.save_slots[game_version] or {}
 		for _, class in pairs(managers_list) do
 			if managers[class] then
-				if type(managers[class].save) == "function"  then
+				if type(managers[class].save) == "function" then
 					managers[class]:save(save_slot)
 				end
 
-				if type(managers[class].save_savedata) == "function"  then
+				if type(managers[class].save_savedata) == "function" then
 					managers[class]:save_savedata(save_slot)
 				end
 
-				if type(managers[class].save_settings) == "function"  then
+				if type(managers[class].save_settings) == "function" then
 					managers[class]:save_settings(save_slot)
 				end
 
-				if type(managers[class].save_job_values) == "function"  then
+				if type(managers[class].save_job_values) == "function" then
 					managers[class]:save_job_values(save_slot)
 				end
 
-				if type(managers[class].save_profile) == "function"  then
+				if type(managers[class].save_profile) == "function" then
 					managers[class]:save_profile(save_slot)
 				end
 			end
@@ -114,9 +114,7 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 		SavefileTaskHandler:new(NewSave:save(save_data, param_map), 3, function() end, nil, "progress")
 	end
 
-	if self._progress_loaded then
-		self:show_icon(utf8.to_upper(managers.localization:text("savefile_saving")))
-	end
+	self:show_icon(utf8.to_upper(managers.localization:text("savefile_saving")))
 end
 
 function NewSavefileManager:get_progress_from_older_version_slot(game_ver)
@@ -136,12 +134,13 @@ function NewSavefileManager:get_progress_from_older_version_slot(game_ver)
 end
 
 function NewSavefileManager:perform_load(cache)
+	log("function NewSavefileManager:perform_load(cache)")
 	Global.savefile_manager.save_slots = cache
 
 	if not cache[game_version] then
 		local donor_slot, donor_data = self:get_progress_from_older_version_slot(game_version)
 		local hint_dialog = {
-			text = "New save file system containts all progress in a single save file, one for each game version. You have to port the progress from another save file manually, all you need to do is goto options and find 'Port the Progress' option, and enter the slot you played on, from 0 to 99.\n\nVanilla - 98\nUpdate 76 - 76\nUpdate 37.1 - 37\nUpdate 24.2 - 11\nDefault slot for all updates - 69",
+			text = "New save file system containts all progress in a single save file, one for each game version. You have to port the progress from another save file manually, all you need to do is goto options and find 'Port the Progress' option, and enter the slot you played on, from 0 to 99.\n\n98 - Vanilla\n76 - Update 76\n37 - Update 37.1\n11 - Update 24.2\n69 - Default slot for all updates",
 			button_list = {{
 				text = managers.localization:text("dialog_ok")
 			}}
@@ -222,9 +221,10 @@ function NewSavefileManager:load_progress(save_system)
 				for slot, slot_data in pairs(result_data) do
 					if slot == 1 and slot_data.status == "OK" then
 						self:perform_load(slot_data.data)
-						Global.savefile_manager.progress_loaded = true
 
 						break
+					else
+						self:perform_load({})
 					end
 				end
 			end
@@ -245,13 +245,8 @@ function NewSavefileManager:load_progress(save_system)
 	end
 end
 
-function NewSavefileManager:show_icon(text, loading)
-	if self._loading_icon then
-		return
-	end
-
+function NewSavefileManager:show_icon(text)
 	self._workspace:show()
-	self._loading_icon = loading
 	self._hide_gui_time = nil
 	self._show_gui_time = TimerManager:main():time()
 	self._gui_script:set_text(text)
@@ -270,12 +265,11 @@ function NewSavefileManager:update(t, dt)
 		self._workspace:hide()
 		self._gui_script:set_text("")
 		self._hide_gui_time = nil
-		self._loading_icon = nil
 	end
 
 	if self._show_gui_time then
 		local main_time = TimerManager:main():time()
-		local check_t = self._loading_icon and 5 or 3
+		local check_t = 3
 		if check_t < main_time - self._show_gui_time then
 			self._hide_gui_time = main_time
 		elseif main_time - self._show_gui_time > 1 then
@@ -299,8 +293,9 @@ function NewSavefileManager:port_progress_from_another_savefile(slot, save_syste
 				for file_slot, slot_data in pairs(result_data) do
 					if file_slot == slot and slot_data.status == "OK" then
 						Global.savefile_manager.save_slots[game_version] = slot_data.data
-						self:save_progress()
-						setup:quit()
+						self:save_progress(nil, true)
+						PrintTable(slot_data.data)
+						-- setup:quit()
 
 						break
 					end

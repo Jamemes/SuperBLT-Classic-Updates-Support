@@ -6,8 +6,8 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 		menu_filter_search = "Search",
 		menu_button_hide = "Hide",
 		menu_button_show = "Show",
-		menu_PROGRESS_SLOT_help = string.format("%s  (Update: %s)", "Choose the slot from 0 to 99.", game_update),
-		menu_PROGRESS_SLOT = "Port the Progress",
+		menu_port_progress = "Port the Progress",
+		menu_port_progress_help = string.format("%s  (Update: %s)", "Choose the slot from 0 to 99.", game_update),
 		menu_slot_change = "Change Progress Slot",
 		menu_slot_change_text = "In the order to change the progress slot you need to restart the game. Continue?",
 		menu_slot_is_forbidden_text = "This slot is used by current version of the game or gameplay overhauls.",
@@ -22,8 +22,8 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 			menu_filter_search = "Поиск",
 			menu_button_hide = "Скрыть",
 			menu_button_show = "Показать",
-			menu_PROGRESS_SLOT = "Слот прогресса",
-			menu_PROGRESS_SLOT_help = string.format("%s  (Обновление: %s)", "Выберите слот с 0 по 99.", game_update),
+			menu_port_progress = "Слот прогресса",
+			menu_port_progress_help = string.format("%s  (Обновление: %s)", "Выберите слот с 0 по 99.", game_update),
 			menu_slot_change = "Портировать прогресс",
 			menu_slot_change_text = "Чтобы изменить слот прогресса вам нужно перезапустить игру. Продолжить?",
 			menu_slot_is_forbidden_text = "Этот слот используется актуальной версией игры или модификациями.",
@@ -42,8 +42,8 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_port_progress_from_savefile_input
 		}
 		local params = {
 			name = "port_progress_from_savefile",
-			text_id = "menu_port_progress_from_savefile",
-			help_id = "menu_port_progress_from_savefile_help",
+			text_id = "menu_port_progress",
+			help_id = "menu_port_progress_help",
 			empty_gui_input_limit = 28,
 			input_limit = 2,
 			callback = "port_progress_from_savefile_call"
