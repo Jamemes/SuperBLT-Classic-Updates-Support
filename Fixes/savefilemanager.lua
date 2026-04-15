@@ -287,8 +287,7 @@ function NewSavefileManager:port_progress_from_another_savefile(required_slot, s
 			if not status.UserManager then
 				local default = {}
 				managers.user:save(default)
-				-- managers.skilltree:save(default)
-				-- managers.blackmarket:save(default)
+
 				local save_slot = Global.savefile_manager.save_slots[game_version]
 				Global.savefile_manager.save_slots[game_version] = status
 				Global.savefile_manager.save_slots[game_version].UserManager = default.UserManager
@@ -329,48 +328,60 @@ function NewSavefileManager:port_progress_from_another_savefile(required_slot, s
 
 				for id, secondary in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries) do
 					if not tweak_data.weapon[secondary.weapon_id] then
-						if secondary.equipped then
-							local secondary_factory_id = "wpn_fps_pis_g17"
-							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[1] = {
-								equipped = true,
-								factory_id = secondary_factory_id,
-								blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(secondary_factory_id)),
-								weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(secondary_factory_id),
-								global_values = {}
-							}
-						end
-
 						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id] = nil
 					else
-						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].global_values = {}
-						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(secondary.factory_id))
-					end
-				end
-				
-				for id, primary in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries) do
-					if not tweak_data.weapon[primary.weapon_id] then
-						if primary.equipped then
-							local primary_factory_id = "wpn_fps_ass_amcar"
-							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[1] = {
-								equipped = true,
-								factory_id = primary_factory_id,
-								blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(primary_factory_id)),
-								weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(primary_factory_id),
-								global_values = {}
-							}
+						if secondary.equipped then
+							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].equipped = false
 						end
 
-						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id] = nil
-					else
-						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].global_values = {}
-						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(primary.factory_id))
+						for part_index, part_id in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].blueprint) do
+							if not tweak_data.weapon.factory.parts[part_id] then
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].blueprint[part_index] = nil
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].global_values[part_id] = nil
+							end
+						end
 					end
 				end
+
+				for id, primary in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries) do
+					if not tweak_data.weapon[primary.weapon_id] then
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id] = nil
+					else
+						if primary.equipped then
+							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].equipped = false
+						end
+
+						for part_index, part_id in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].blueprint) do
+							if not tweak_data.weapon.factory.parts[part_id] then
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].blueprint[part_index] = nil
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].global_values[part_id] = nil
+							end
+						end
+					end
+				end
+			
+				local secondary_factory_id = "wpn_fps_pis_g17"
+				table.insert(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries, 1, {
+					equipped = true,
+					factory_id = secondary_factory_id,
+					blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(secondary_factory_id)),
+					weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(secondary_factory_id),
+					global_values = {}
+				})
+
+				local primary_factory_id = "wpn_fps_ass_amcar"
+				table.insert(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries, 1, {
+					equipped = true,
+					factory_id = primary_factory_id,
+					blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(primary_factory_id)),
+					weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(primary_factory_id),
+					global_values = {}
+				})
 
 				Global.savefile_manager.save_slots[game_version].PlayerManager.kit.equipment_slots = {}
 
 				self:save_progress(nil, true)
-				setup:quit()
+				self:load_progress()
 			else
 				managers.system_menu:show({
 					title = "Error",
