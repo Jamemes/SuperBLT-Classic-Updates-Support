@@ -1,3 +1,4 @@
+local ultimate_slot = 1
 local game_version = SBLT_CUS:game_version("ver")
 local managers_list = {
 	"user",
@@ -95,7 +96,7 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 			queued_in_save_manager = true,
 			date_format = "%c",
 			max_queue_size = 1,
-			first_slot = 100,
+			first_slot = ultimate_slot,
 			task_type = 3,
 			subtitle = "",
 			details = "",
@@ -104,7 +105,7 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 		}, function() end)
 	elseif type(NewSave) == "userdata" then
 		local param_map = {
-			save_slots = 100,
+			save_slots = ultimate_slot,
 			save_system = save_system or "steam_cloud"
 		}
 		local save_data = NewSave:create_save_data()
@@ -134,7 +135,6 @@ function NewSavefileManager:get_progress_from_older_version_slot(game_ver)
 end
 
 function NewSavefileManager:perform_load(cache)
-	log("function NewSavefileManager:perform_load(cache)")
 	Global.savefile_manager.save_slots = cache
 
 	if not cache[game_version] then
@@ -214,7 +214,7 @@ function NewSavefileManager:load_progress(save_system)
 		SaveGameManager:load({
 			queued_in_save_manager = true,
 			task_type = 2,
-			first_slot = 100,
+			first_slot = ultimate_slot,
 			save_system = save_system or "steam_cloud"
 		}, function(_, result_data)
 			if type_name(result_data) == "table" then
@@ -231,7 +231,7 @@ function NewSavefileManager:load_progress(save_system)
 		end)
 	elseif type(NewSave) == "userdata" then
 		local task = NewSave:load({
-			save_slots = 100,
+			save_slots = ultimate_slot,
 			save_system = save_system or "steam_cloud"
 		})
 
@@ -281,24 +281,122 @@ function NewSavefileManager:update(t, dt)
 	end
 end
 
-function NewSavefileManager:port_progress_from_another_savefile(slot, save_system)
+function NewSavefileManager:port_progress_from_another_savefile(required_slot, save_system)
+	local function port_the_load(status_ok, status)
+		if status_ok then
+			if not status.UserManager then
+				local default = {}
+				managers.user:save(default)
+				-- managers.skilltree:save(default)
+				-- managers.blackmarket:save(default)
+				local save_slot = Global.savefile_manager.save_slots[game_version]
+				Global.savefile_manager.save_slots[game_version] = status
+				Global.savefile_manager.save_slots[game_version].UserManager = default.UserManager
+
+				for id, mask in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks) do
+					if not tweak_data.blackmarket.masks[mask.mask_id] then
+						if mask.equipped then
+							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[1].equipped = true
+						end
+
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id] = nil
+					else	
+						if mask.modded then
+							local default = managers.blackmarket:get_default_mask_blueprint()
+							local blueprint_items = {
+								color = "colors",
+								color_a = "colors",
+								color_b = "colors",
+								color_c = "colors",
+								material = "materials",
+								pattern = "textures",
+							}
+
+							for type_id, blueprints_tweak in pairs(blueprint_items) do
+								if not default[type_id] and mask.blueprint[type_id] then
+									Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint[type_id] = nil
+								elseif (default[type_id] and not mask.blueprint[type_id]) or (mask.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][mask.blueprint[type_id].id]) then
+									Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint[type_id] = default[type_id]
+								end
+							end
+
+							if mask.blueprint.pattern.id == "no_color_no_material" then
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint.pattern.id = "no_color_full_material"
+							end
+						end
+					end
+				end
+
+				for id, secondary in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries) do
+					if not tweak_data.weapon[secondary.weapon_id] then
+						if secondary.equipped then
+							local secondary_factory_id = "wpn_fps_pis_g17"
+							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[1] = {
+								equipped = true,
+								factory_id = secondary_factory_id,
+								blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(secondary_factory_id)),
+								weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(secondary_factory_id),
+								global_values = {}
+							}
+						end
+
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id] = nil
+					else
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].global_values = {}
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.secondaries[id].blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(secondary.factory_id))
+					end
+				end
+				
+				for id, primary in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries) do
+					if not tweak_data.weapon[primary.weapon_id] then
+						if primary.equipped then
+							local primary_factory_id = "wpn_fps_ass_amcar"
+							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[1] = {
+								equipped = true,
+								factory_id = primary_factory_id,
+								blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(primary_factory_id)),
+								weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(primary_factory_id),
+								global_values = {}
+							}
+						end
+
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id] = nil
+					else
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].global_values = {}
+						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.primaries[id].blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(primary.factory_id))
+					end
+				end
+
+				Global.savefile_manager.save_slots[game_version].PlayerManager.kit.equipment_slots = {}
+
+				self:save_progress(nil, true)
+				setup:quit()
+			else
+				managers.system_menu:show({
+					title = "Error",
+					text = "This slot cannot be used. May be a setting slot.",
+					button_list = {{text = managers.localization:text("dialog_ok")}}
+				})
+			end
+		else
+			managers.system_menu:show({
+				title = "Error",
+				text = "Content from the save file can't be loaded.\n\nError message: " .. table.get_key(SaveData, save_data:status()),
+				button_list = {{text = managers.localization:text("dialog_ok")}}
+			})
+		end
+	end
+	
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:load({
 			queued_in_save_manager = true,
 			task_type = 2,
-			first_slot = slot,
+			first_slot = required_slot,
 			save_system = save_system or "steam_cloud"
 		}, function(_, result_data)
 			if type_name(result_data) == "table" then
-				for file_slot, slot_data in pairs(result_data) do
-					if file_slot == slot and slot_data.status == "OK" then
-						Global.savefile_manager.save_slots[game_version] = slot_data.data
-						self:save_progress(nil, true)
-						PrintTable(slot_data.data)
-						-- setup:quit()
-
-						break
-					end
+				for slot, slot_data in pairs(result_data) do
+					port_the_load(slot == required_slot and slot_data.status == "OK", slot_data.data)
 				end
 			end
 		end)
@@ -309,35 +407,7 @@ function NewSavefileManager:port_progress_from_another_savefile(slot, save_syste
 		})
 
 		self._task_handler = SavefileTaskHandler:new(task, 2, function(save_data)
-			if save_data:status() == SaveData.OK then
-				local status = save_data:information()
-				if status.UpgradesManager then
-					local default = {}
-					managers.user:save(default)
-					-- managers.skilltree:save(default)
-					-- managers.blackmarket:save(default)
-
-					Global.savefile_manager.save_slots[game_version] = save_data:information()
-					Global.savefile_manager.save_slots[game_version].UserManager = default.UserManager
-
-					-- default.blackmarket.inventory = Global.savefile_manager.save_slots[game_version].blackmarket.inventory
-
-					self:save_progress(nil, true)
-					setup:quit()
-				else
-					managers.system_menu:show({
-						title = "Error",
-						text = "This slot cannot be used. May be a setting slot.",
-						button_list = {{text = managers.localization:text("dialog_ok")}}
-					})
-				end
-			else
-				managers.system_menu:show({
-					title = "Error",
-					text = "Content from the save file can't be loaded.\n\nError message: " .. table.get_key(SaveData, save_data:status()),
-					button_list = {{text = managers.localization:text("dialog_ok")}}
-				})
-			end
+			port_the_load(save_data:status() == SaveData.OK, save_data:information())
 		end, function() end)
 	end
 end
