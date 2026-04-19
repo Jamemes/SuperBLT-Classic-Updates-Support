@@ -1,4 +1,7 @@
-local ultimate_slot = 1
+
+SavefileManager.PROGRESS_SLOT = 1
+SavefileManager.BACKUP_SLOT = 1
+
 local game_version = SBLT_CUS:game_version("ver")
 local managers_list = {
 	"user",
@@ -48,22 +51,25 @@ end
 -- 	return x, y, w, h
 -- end
 
-NewSavefileManager = NewSavefileManager or class()
-SavefileManager = NewSavefileManager or class()
-function NewSavefileManager:init()
-	Global.savefile_manager = Global.savefile_manager or {}
-	Global.savefile_manager.save_slots = Global.savefile_manager.save_slots or {}
-	Global.savefile_manager.backup_save_enabled = true
+-- SavefileManager = SavefileManager or class()
+-- SavefileManager = SavefileManager or class()
+-- function SavefileManager:init()
+-- 	Global.savefile_manager = Global.savefile_manager or {}
+-- 	Global.savefile_manager.save_slots = Global.savefile_manager.save_slots or {}
+-- 	Global.savefile_manager.backup_save_enabled = true
 
-	self._workspace = managers.gui_data:create_saferect_workspace()
-	self._gui = self._workspace:panel():gui(Idstring("guis/savefile_manager"))
-	self._gui_script = self._gui:script()
-	self._workspace:hide()
+-- 	self._active_changed_callback_handler = CoreEvent.CallbackEventHandler:new()
+-- 	self._load_done_callback_handler = CoreEvent.CallbackEventHandler:new()
+-- 	self._load_sequence_done_callback_handler = CoreEvent.CallbackEventHandler:new()
+-- 	self._workspace = managers.gui_data:create_saferect_workspace()
+-- 	self._gui = self._workspace:panel():gui(Idstring("guis/savefile_manager"))
+-- 	self._gui_script = self._gui:script()
+-- 	self._workspace:hide()
 
-	self:load_progress()
-end
+-- 	self:load_progress()
+-- end
 
-function NewSavefileManager:save_progress(save_system, ignore_current_progress)
+function SavefileManager:save_progress(save_system, ignore_current_progress)
 	if not ignore_current_progress then
 		local save_slot = Global.savefile_manager.save_slots[game_version] or {}
 		for _, class in pairs(managers_list) do
@@ -96,7 +102,7 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 			queued_in_save_manager = true,
 			date_format = "%c",
 			max_queue_size = 1,
-			first_slot = ultimate_slot,
+			first_slot = self.PROGRESS_SLOT,
 			task_type = 3,
 			subtitle = "",
 			details = "",
@@ -105,7 +111,7 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 		}, function() end)
 	elseif type(NewSave) == "userdata" then
 		local param_map = {
-			save_slots = ultimate_slot,
+			save_slots = self.PROGRESS_SLOT,
 			save_system = save_system or "steam_cloud"
 		}
 		local save_data = NewSave:create_save_data()
@@ -118,7 +124,7 @@ function NewSavefileManager:save_progress(save_system, ignore_current_progress)
 	self:show_icon(utf8.to_upper(managers.localization:text("savefile_saving")))
 end
 
-function NewSavefileManager:get_progress_from_older_version_slot(game_ver)
+function SavefileManager:get_progress_from_older_version_slot(game_ver)
     if not tonumber(game_ver) then
         return
     end
@@ -134,7 +140,7 @@ function NewSavefileManager:get_progress_from_older_version_slot(game_ver)
     return donor_slot, donor_data
 end
 
-function NewSavefileManager:perform_load(cache)
+function SavefileManager:perform_load(cache)
 	Global.savefile_manager.save_slots = cache
 
 	if not cache[game_version] then
@@ -209,12 +215,12 @@ function NewSavefileManager:perform_load(cache)
 	end
 end
 
-function NewSavefileManager:load_progress(save_system)
+function SavefileManager:load_progress(save_system)
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:load({
 			queued_in_save_manager = true,
 			task_type = 2,
-			first_slot = ultimate_slot,
+			first_slot = self.PROGRESS_SLOT,
 			save_system = save_system or "steam_cloud"
 		}, function(_, result_data)
 			if type_name(result_data) == "table" then
@@ -231,7 +237,7 @@ function NewSavefileManager:load_progress(save_system)
 		end)
 	elseif type(NewSave) == "userdata" then
 		local task = NewSave:load({
-			save_slots = ultimate_slot,
+			save_slots = self.PROGRESS_SLOT,
 			save_system = save_system or "steam_cloud"
 		})
 
@@ -245,7 +251,7 @@ function NewSavefileManager:load_progress(save_system)
 	end
 end
 
-function NewSavefileManager:show_icon(text)
+function SavefileManager:show_icon(text)
 	self._workspace:show()
 	self._hide_gui_time = nil
 	self._show_gui_time = TimerManager:main():time()
@@ -253,7 +259,7 @@ function NewSavefileManager:show_icon(text)
 	self._gui_script.indicator:animate(self._gui_script.saving)
 end
 
-function NewSavefileManager:update(t, dt)
+function SavefileManager:update(t, dt)
 	while self._task_handler do
 		if self._task_handler:update() then
 			self._task_handler:destroy()
@@ -281,16 +287,57 @@ function NewSavefileManager:update(t, dt)
 	end
 end
 
-function NewSavefileManager:port_progress_from_another_savefile(required_slot, save_system)
+function SavefileManager:port_progress_from_another_savefile(required_slot, save_system)
 	local function port_the_load(status_ok, status)
 		if status_ok then
 			if not status.UserManager then
+				-- managers.menu:do_clear_progress()
 				local default = {}
 				managers.user:save(default)
-
-				local save_slot = Global.savefile_manager.save_slots[game_version]
+				default.UserManager[10] = false
+				default.UserManager[36] = 1.4
+				
 				Global.savefile_manager.save_slots[game_version] = status
 				Global.savefile_manager.save_slots[game_version].UserManager = default.UserManager
+				
+				-- log(Global.savefile_manager.save_slots[game_version].SkillTreeManager.VERSION, managers.skilltree.VERSION)
+				
+				managers.skilltree:reset()
+				managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
+				Global.savefile_manager.save_slots[game_version].SkillTreeManager.VERSION = managers.skilltree.VERSION
+				-- for id, skill in pairs(Global.savefile_manager.save_slots[game_version].SkillTreeManager.skills) do
+				-- 	skill.unlocked = 0
+				-- end
+
+				-- for id, tree in pairs(Global.savefile_manager.save_slots[game_version].SkillTreeManager.trees) do
+				-- 	tree.points_spent = Application:digest_value(0, true)
+				-- end
+
+				-- local level = 99
+				-- local rep_upgrade = 2 * math.round(level / 10 - 1)
+				-- local skill_points = level + rep_upgrade
+				-- Global.skilltree_manager.points = Application:digest_value(skill_points, true)
+				-- Global.savefile_manager.save_slots[game_version].SkillTreeManager.points = Application:digest_value(skill_points, true)
+
+				-- 	Global.up
+					-- managers.skilltree:load()
+					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager = nil
+					-- managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
+					-- Global.skilltree_manager.points = Application:digest_value(0, true)
+					-- Global.skilltree_manager = default.SkillTreeManager
+					-- managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
+					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager.skills = {}
+					-- Global.skilltree_manager.skills = {}
+					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager.VERSION = managers.skilltree.VERSION
+
+					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager = {}
+					-- Global.savefile_manager.save_slots[game_version].UpgradesManager = {}
+					-- Global.skilltree_manager = default.SkillTreeManager
+					
+
+					-- function SkillTreeManager:level_up()
+					-- function SkillTreeManager:rep_upgrade()
+				-- end
 
 				for id, mask in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks) do
 					if not tweak_data.blackmarket.masks[mask.mask_id] then
@@ -300,28 +347,26 @@ function NewSavefileManager:port_progress_from_another_savefile(required_slot, s
 
 						Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id] = nil
 					else	
-						if mask.modded then
-							local default = managers.blackmarket:get_default_mask_blueprint()
-							local blueprint_items = {
-								color = "colors",
-								color_a = "colors",
-								color_b = "colors",
-								color_c = "colors",
-								material = "materials",
-								pattern = "textures",
-							}
+						local default = managers.blackmarket:get_default_mask_blueprint()
+						local blueprint_items = {
+							color = "colors",
+							color_a = "colors",
+							color_b = "colors",
+							color_c = "colors",
+							material = "materials",
+							pattern = "textures",
+						}
 
-							for type_id, blueprints_tweak in pairs(blueprint_items) do
-								if not default[type_id] and mask.blueprint[type_id] then
-									Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint[type_id] = nil
-								elseif (default[type_id] and not mask.blueprint[type_id]) or (mask.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][mask.blueprint[type_id].id]) then
-									Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint[type_id] = default[type_id]
-								end
+						for type_id, blueprints_tweak in pairs(blueprint_items) do
+							if not default[type_id] and mask.blueprint[type_id] then
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint[type_id] = nil
+							elseif (default[type_id] and not mask.blueprint[type_id]) or (mask.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][mask.blueprint[type_id].id]) then
+								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint[type_id] = default[type_id]
 							end
+						end
 
-							if mask.blueprint.pattern.id == "no_color_no_material" then
-								Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint.pattern.id = "no_color_full_material"
-							end
+						if mask.modded and mask.blueprint.pattern.id == "no_color_no_material" then
+							Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks[id].blueprint.pattern.id = "no_color_full_material"
 						end
 					end
 				end
@@ -382,6 +427,7 @@ function NewSavefileManager:port_progress_from_another_savefile(required_slot, s
 
 				self:save_progress(nil, true)
 				self:load_progress()
+				-- setup:quit()
 			else
 				managers.system_menu:show({
 					title = "Error",
@@ -423,22 +469,31 @@ function NewSavefileManager:port_progress_from_another_savefile(required_slot, s
 	end
 end
 
-function NewSavefileManager:is_in_loading_sequence()
+function SavefileManager:is_in_loading_sequence()
 	return not self._progress_loaded
 end
 
-function NewSavefileManager:is_active() end
-function NewSavefileManager:savefile_access() end
-function NewSavefileManager:add_load_sequence_done_callback_handler() end
-function NewSavefileManager:setting_changed() end
-function NewSavefileManager:add_load_done_callback() end
-function NewSavefileManager:save_setting() end
-function NewSavefileManager:add_active_changed_callback() end
-function NewSavefileManager:break_loading_sequence() end
-function NewSavefileManager:save_game() end
-function NewSavefileManager:storage_changed() end
-function NewSavefileManager:active_user_changed() end
-function NewSavefileManager:check_space_required() end
-function NewSavefileManager:fetch_savegame_hdd_space_required() end
-function NewSavefileManager:load_settings() end
-function NewSavefileManager:paused_update() end
+-- function SavefileManager:add_load_done_callback(callback_func)
+-- 	self._load_done_callback_handler:add(callback_func)
+-- end
+
+-- function SavefileManager:add_load_sequence_done_callback_handler(callback_func)
+-- 	self._load_sequence_done_callback_handler:add(callback_func)
+-- end
+
+-- function SavefileManager:add_active_changed_callback(callback_func)
+-- 	self._active_changed_callback_handler:add(callback_func)
+-- end
+
+-- function SavefileManager:is_active() end
+-- function SavefileManager:savefile_access() end
+-- function SavefileManager:setting_changed() end
+-- function SavefileManager:save_setting() end
+-- function SavefileManager:break_loading_sequence() end
+-- function SavefileManager:save_game() end
+-- function SavefileManager:storage_changed() end
+-- function SavefileManager:active_user_changed() end
+-- function SavefileManager:check_space_required() end
+-- function SavefileManager:fetch_savegame_hdd_space_required() end
+-- function SavefileManager:load_settings() end
+-- function SavefileManager:paused_update() end
