@@ -69,7 +69,7 @@ end
 -- 	self:load_progress()
 -- end
 
-function SavefileManager:save_progress(save_system, ignore_current_progress)
+function SavefileManager:_save(slot, ignore_current_progress, save_system)
 	if not ignore_current_progress then
 		local save_slot = Global.savefile_manager.save_slots[game_version] or {}
 		for _, class in pairs(managers_list) do
@@ -215,7 +215,11 @@ function SavefileManager:perform_load(cache)
 	end
 end
 
-function SavefileManager:load_progress(save_system)
+function SavefileManager:storage_changed()
+	self:_load()
+end
+
+function SavefileManager:_load(slot)
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:load({
 			queued_in_save_manager = true,
@@ -288,56 +292,20 @@ function SavefileManager:update(t, dt)
 end
 
 function SavefileManager:port_progress_from_another_savefile(required_slot, save_system)
-	local function port_the_load(status_ok, status)
-		if status_ok then
-			if not status.UserManager then
-				-- managers.menu:do_clear_progress()
-				local default = {}
-				managers.user:save(default)
-				default.UserManager[10] = false
-				default.UserManager[36] = 1.4
+	local function port_the_load(status, loaded_data)
+		if status.ok then
+			if not loaded_data.UserManager and loaded_data.SkillTreeManager then
+				managers.menu:do_clear_progress()
+				-- default.UserManager[10] = false
+				-- default.UserManager[36] = 1.4
 				
-				Global.savefile_manager.save_slots[game_version] = status
-				Global.savefile_manager.save_slots[game_version].UserManager = default.UserManager
-				
-				-- log(Global.savefile_manager.save_slots[game_version].SkillTreeManager.VERSION, managers.skilltree.VERSION)
-				
-				managers.skilltree:reset()
-				managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
-				Global.savefile_manager.save_slots[game_version].SkillTreeManager.VERSION = managers.skilltree.VERSION
-				-- for id, skill in pairs(Global.savefile_manager.save_slots[game_version].SkillTreeManager.skills) do
-				-- 	skill.unlocked = 0
-				-- end
+				Global.savefile_manager.save_slots[game_version] = deep_clone(loaded_data)
+				managers.user:save(Global.savefile_manager.save_slots[game_version])
 
-				-- for id, tree in pairs(Global.savefile_manager.save_slots[game_version].SkillTreeManager.trees) do
-				-- 	tree.points_spent = Application:digest_value(0, true)
-				-- end
-
-				-- local level = 99
-				-- local rep_upgrade = 2 * math.round(level / 10 - 1)
-				-- local skill_points = level + rep_upgrade
-				-- Global.skilltree_manager.points = Application:digest_value(skill_points, true)
-				-- Global.savefile_manager.save_slots[game_version].SkillTreeManager.points = Application:digest_value(skill_points, true)
-
-				-- 	Global.up
-					-- managers.skilltree:load()
-					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager = nil
-					-- managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
-					-- Global.skilltree_manager.points = Application:digest_value(0, true)
-					-- Global.skilltree_manager = default.SkillTreeManager
-					-- managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
-					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager.skills = {}
-					-- Global.skilltree_manager.skills = {}
-					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager.VERSION = managers.skilltree.VERSION
-
-					-- Global.savefile_manager.save_slots[game_version].SkillTreeManager = {}
-					-- Global.savefile_manager.save_slots[game_version].UpgradesManager = {}
-					-- Global.skilltree_manager = default.SkillTreeManager
-					
-
-					-- function SkillTreeManager:level_up()
-					-- function SkillTreeManager:rep_upgrade()
-				-- end
+				if loaded_data.SkillTreeManager.VERSION > managers.skilltree.VERSION then
+					managers.skilltree:save(Global.savefile_manager.save_slots[game_version])
+					managers.menu:show_skilltree_reseted()
+				end
 
 				for id, mask in pairs(Global.savefile_manager.save_slots[game_version].blackmarket.crafted_items.masks) do
 					if not tweak_data.blackmarket.masks[mask.mask_id] then
@@ -425,9 +393,9 @@ function SavefileManager:port_progress_from_another_savefile(required_slot, save
 
 				Global.savefile_manager.save_slots[game_version].PlayerManager.kit.equipment_slots = {}
 
-				self:save_progress(nil, true)
-				self:load_progress()
-				-- setup:quit()
+				self:_save(nil, true)
+				self:_load()
+				managers.menu:back(true)
 			else
 				managers.system_menu:show({
 					title = "Error",
@@ -438,7 +406,7 @@ function SavefileManager:port_progress_from_another_savefile(required_slot, save
 		else
 			managers.system_menu:show({
 				title = "Error",
-				text = "Content from the save file can't be loaded.\n\nError message: " .. table.get_key(SaveData, save_data:status()),
+				text = "Content from the save file can't be loaded.\n\nError message: " .. status.info,
 				button_list = {{text = managers.localization:text("dialog_ok")}}
 			})
 		end
@@ -453,18 +421,24 @@ function SavefileManager:port_progress_from_another_savefile(required_slot, save
 		}, function(_, result_data)
 			if type_name(result_data) == "table" then
 				for slot, slot_data in pairs(result_data) do
-					port_the_load(slot == required_slot and slot_data.status == "OK", slot_data.data)
+					port_the_load({
+						ok = slot == required_slot and slot_data.status == "OK",
+						info = slot_data.status
+					}, slot_data.data)
 				end
 			end
 		end)
 	elseif type(NewSave) == "userdata" then
 		local task = NewSave:load({
-			save_slots = slot,
+			save_slots = required_slot,
 			save_system = save_system or "steam_cloud"
 		})
 
 		self._task_handler = SavefileTaskHandler:new(task, 2, function(save_data)
-			port_the_load(save_data:status() == SaveData.OK, save_data:information())
+			port_the_load({
+				ok = save_data:status() == SaveData.OK,
+				info = save_data:status()
+		}, save_data:information())
 		end, function() end)
 	end
 end
