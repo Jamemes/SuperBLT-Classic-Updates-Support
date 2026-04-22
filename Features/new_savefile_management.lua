@@ -42,33 +42,6 @@ if _G.IS_VR then
 	table.insert(managers_list, 3, "vr")
 end
 
--- local function make_fine_text(text)
--- 	local x, y, w, h = text:text_rect()
-
--- 	text:set_size(w, h)
--- 	text:set_position(math.round(text:x()), math.round(text:y()))
-
--- 	return x, y, w, h
--- end
-
--- SavefileManager = SavefileManager or class()
--- SavefileManager = SavefileManager or class()
--- function SavefileManager:init()
--- 	Global.savefile_manager = Global.savefile_manager or {}
--- 	Global.savefile_manager.save_slots = Global.savefile_manager.save_slots or {}
--- 	Global.savefile_manager.backup_save_enabled = true
-
--- 	self._active_changed_callback_handler = CoreEvent.CallbackEventHandler:new()
--- 	self._load_done_callback_handler = CoreEvent.CallbackEventHandler:new()
--- 	self._load_sequence_done_callback_handler = CoreEvent.CallbackEventHandler:new()
--- 	self._workspace = managers.gui_data:create_saferect_workspace()
--- 	self._gui = self._workspace:panel():gui(Idstring("guis/savefile_manager"))
--- 	self._gui_script = self._gui:script()
--- 	self._workspace:hide()
-
--- 	self:load_progress()
--- end
-
 function SavefileManager:_save(slot, ignore_current_progress, save_system)
 	if not ignore_current_progress then
 		local save_slot = Global.savefile_manager.save_slots[game_version] or {}
@@ -219,7 +192,7 @@ function SavefileManager:storage_changed()
 	self:_load()
 end
 
-function SavefileManager:_load(slot)
+function SavefileManager:_load(save_system)
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:load({
 			queued_in_save_manager = true,
@@ -446,28 +419,3 @@ end
 function SavefileManager:is_in_loading_sequence()
 	return not self._progress_loaded
 end
-
--- function SavefileManager:add_load_done_callback(callback_func)
--- 	self._load_done_callback_handler:add(callback_func)
--- end
-
--- function SavefileManager:add_load_sequence_done_callback_handler(callback_func)
--- 	self._load_sequence_done_callback_handler:add(callback_func)
--- end
-
--- function SavefileManager:add_active_changed_callback(callback_func)
--- 	self._active_changed_callback_handler:add(callback_func)
--- end
-
--- function SavefileManager:is_active() end
--- function SavefileManager:savefile_access() end
--- function SavefileManager:setting_changed() end
--- function SavefileManager:save_setting() end
--- function SavefileManager:break_loading_sequence() end
--- function SavefileManager:save_game() end
--- function SavefileManager:storage_changed() end
--- function SavefileManager:active_user_changed() end
--- function SavefileManager:check_space_required() end
--- function SavefileManager:fetch_savegame_hdd_space_required() end
--- function SavefileManager:load_settings() end
--- function SavefileManager:paused_update() end
