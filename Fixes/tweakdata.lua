@@ -25,10 +25,7 @@ if not tweak_data.hud_icons.scrollbar_arrow then
 	}
 end
 
-if not tweak_data.BUNDLED_DLC_PACKAGES then
-	tweak_data.BUNDLED_DLC_PACKAGES = {}
-end
-
+tweak_data.BUNDLED_DLC_PACKAGES = tweak_data.BUNDLED_DLC_PACKAGES or {}
 tweak_data.updates_table = {
 	["1.143.246"] = "240.7",
 	["1.143.245"] = "240.6",

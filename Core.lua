@@ -36,10 +36,10 @@ function SBLT_CUS:game_version(param)
 	
 	if param then
 		if type(param) == "number" then
-
 			return tonumber(ver:sub(3, #ver)) >= param
 		elseif type(param) == "string" then
-			return param == "num" and tonumber(ver:sub(3, #ver)) or ver:sub(3, #ver)
+			local ver, _ = string.gsub(ver, "%.", "", 1)
+			return param == "num" and tonumber(ver) or ver
 		end
 	else
 		return ver
