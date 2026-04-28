@@ -159,7 +159,9 @@ function SavefileManager:perform_load(cache, progress_port)
 					for type_id, blueprints_tweak in pairs(blueprint_items) do
 						if not default[type_id] and item.blueprint[type_id] then
 							return_from_stash_allowed = false
-						elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+						end
+						
+						if (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
 							return_from_stash_allowed = false
 						end
 					end
@@ -179,7 +181,7 @@ function SavefileManager:perform_load(cache, progress_port)
 
 			if return_from_stash_allowed then
 				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-				HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category, item.mask_id or item.weapon_id, item.slot), string.format("Item is returned to the inventory."))
+				HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), string.format("Item is returned to the inventory."))
 				Global.save_slots[save_slot].stashed_items[id] = nil
 			end
 		end
@@ -194,7 +196,7 @@ function SavefileManager:perform_load(cache, progress_port)
 			item.equipped = false
 			table.insert(Global.save_slots[save_slot].stashed_items, item)
 			Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
-			HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category), string.format("This item is stashed, because it does not compatible on this version or have modded with uncompatible items. It will be returned back as soon as you will lauch the version where it's compatible."))
+			HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), string.format("This item is stashed, because it does not compatible on this version or have modded with uncompatible items. It will be returned back as soon as you will lauch the version where it's compatible."))
 		end
 
 		for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
