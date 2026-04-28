@@ -4,7 +4,6 @@ SavefileManager.PROGRESS_SLOT = 2013
 SavefileManager.BACKUP_SLOT = 2013
 SavefileManager._task_queue = {}
 
-local game_ver = SBLT_CUS:game_version("ver")
 local managers_list = {
 	"user",
 	"music",
@@ -83,15 +82,15 @@ function SavefileManager:storage_changed()
 	self:_load()
 end
 
-function SavefileManager:get_progress_from_older_version_slot(game_ver)
-    if not tonumber(game_ver) then
+function SavefileManager:get_progress_from_older_version_slot(save_slot)
+    if not tonumber(save_slot) then
         return
     end
 
     local donor_slot, donor_data = nil, nil
     for slot_version, data in pairs(Global.save_slots) do
         local slot_ver_num = tonumber(slot_version)
-        if slot_ver_num and tonumber(game_ver) > tonumber(slot_ver_num) and tonumber(slot_ver_num) > tonumber(donor_slot or 0) then
+        if slot_ver_num and tonumber(save_slot) > tonumber(slot_ver_num) and tonumber(slot_ver_num) > tonumber(donor_slot or 0) then
             donor_slot, donor_data = slot_version, data
         end
     end
@@ -100,139 +99,152 @@ function SavefileManager:get_progress_from_older_version_slot(game_ver)
 end
 
 function SavefileManager:perform_load(cache, progress_port)
-	if progress_port then
-		if not cache.UserManager and cache.SkillTreeManager then
+	if cache then
+		if progress_port then
 			managers.menu:do_clear_progress()
-			managers.user:save(cache)
-			Global.save_slots[game_ver] = deep_clone(cache)
-			
-			if cache.SkillTreeManager.VERSION > managers.skilltree.VERSION then
-				managers.skilltree:save(Global.save_slots[game_ver])
-				managers.menu:show_skilltree_reseted()
+			if not cache.UserManager then
+				managers.user:save(cache)
 			end
+			local save_slot = Global.save_slots.current_slot
+			Global.save_slots[save_slot] = Global.save_slots[save_slot] or {}
+			self:perform_save(Global.save_slots[save_slot])
 
-			for id, mask in pairs(Global.save_slots[game_ver].blackmarket.crafted_items.masks) do
-				if not tweak_data.blackmarket.masks[mask.mask_id] then
-					if mask.equipped then
-						Global.save_slots[game_ver].blackmarket.crafted_items.masks[1].equipped = true
-					end
-
-					Global.save_slots[game_ver].blackmarket.crafted_items.masks[id] = nil
-				else	
-					local default = managers.blackmarket:get_default_mask_blueprint()
-					local blueprint_items = {
-						color = "colors",
-						color_a = "colors",
-						color_b = "colors",
-						color_c = "colors",
-						material = "materials",
-						pattern = "textures",
-					}
-
-					for type_id, blueprints_tweak in pairs(blueprint_items) do
-						if not default[type_id] and mask.blueprint[type_id] then
-							Global.save_slots[game_ver].blackmarket.crafted_items.masks[id].blueprint[type_id] = nil
-						elseif (default[type_id] and not mask.blueprint[type_id]) or (mask.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][mask.blueprint[type_id].id]) then
-							Global.save_slots[game_ver].blackmarket.crafted_items.masks[id].blueprint[type_id] = default[type_id]
-						end
-					end
-
-					if mask.modded and mask.blueprint.pattern.id == "no_color_no_material" then
-						Global.save_slots[game_ver].blackmarket.crafted_items.masks[id].blueprint.pattern.id = "no_color_full_material"
-					end
-				end
+			for tbl, data in pairs(cache) do
+				Global.save_slots[save_slot][tbl] = data
 			end
-
-			for id, secondary in pairs(Global.save_slots[game_ver].blackmarket.crafted_items.secondaries) do
-				if not tweak_data.weapon[secondary.weapon_id] then
-					Global.save_slots[game_ver].blackmarket.crafted_items.secondaries[id] = nil
-				else
-					if secondary.equipped then
-						Global.save_slots[game_ver].blackmarket.crafted_items.secondaries[id].equipped = false
-					end
-
-					for part_index, part_id in pairs(Global.save_slots[game_ver].blackmarket.crafted_items.secondaries[id].blueprint) do
-						if not tweak_data.weapon.factory.parts[part_id] then
-							Global.save_slots[game_ver].blackmarket.crafted_items.secondaries[id].blueprint[part_index] = nil
-							Global.save_slots[game_ver].blackmarket.crafted_items.secondaries[id].global_values[part_id] = nil
-						end
-					end
-				end
-			end
-
-			for id, primary in pairs(Global.save_slots[game_ver].blackmarket.crafted_items.primaries) do
-				if not tweak_data.weapon[primary.weapon_id] then
-					Global.save_slots[game_ver].blackmarket.crafted_items.primaries[id] = nil
-				else
-					if primary.equipped then
-						Global.save_slots[game_ver].blackmarket.crafted_items.primaries[id].equipped = false
-					end
-
-					for part_index, part_id in pairs(Global.save_slots[game_ver].blackmarket.crafted_items.primaries[id].blueprint) do
-						if not tweak_data.weapon.factory.parts[part_id] then
-							Global.save_slots[game_ver].blackmarket.crafted_items.primaries[id].blueprint[part_index] = nil
-							Global.save_slots[game_ver].blackmarket.crafted_items.primaries[id].global_values[part_id] = nil
-						end
-					end
-				end
-			end
-		
-			local secondary_factory_id = "wpn_fps_pis_g17"
-			table.insert(Global.save_slots[game_ver].blackmarket.crafted_items.secondaries, 1, {
-				equipped = true,
-				factory_id = secondary_factory_id,
-				blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(secondary_factory_id)),
-				weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(secondary_factory_id),
-				global_values = {}
-			})
-
-			local primary_factory_id = "wpn_fps_ass_amcar"
-			table.insert(Global.save_slots[game_ver].blackmarket.crafted_items.primaries, 1, {
-				equipped = true,
-				factory_id = primary_factory_id,
-				blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(primary_factory_id)),
-				weapon_id = managers.weapon_factory:get_weapon_id_by_factory_id(primary_factory_id),
-				global_values = {}
-			})
-
-			Global.save_slots[game_ver].PlayerManager.kit.equipment_slots = {}
-			Global.save_slots[game_ver].blackmarket.new_item_type_unlocked = {}
 		else
-			message_dialog("Error", "This file cannot be used. Could be a setting slot.")
-			return
-		end
-	else
-		if cache then
+			cache.current_slot = current_slot or 1
 			Global.save_slots = cache
 		end
 	end
-
-	local data = Global.save_slots[game_ver]
+	
+	local save_slot = Global.save_slots.current_slot
+	local data = Global.save_slots[save_slot]
 	if not data then
-		local donor_slot, donor_data = self:get_progress_from_older_version_slot(game_ver)
-		message_dialog("New Save Management System", "Data is not found.\n\nSuperBLT-CUS using it's own save management, your progresses from all versions will be separately stored into the single save file. If you have played u24.2, u37.1, and u76, system will port the progress automatically. Otherwise, you have to choose the save file from the list.")
+		-- message_dialog("New Save Management System", "Data is not found.\n\nSuperBLT-CUS using it's own save management, your progresses from all versions will be separately stored into the single save file. If you have played u24.2, u37.1, and u76, system will port the progress automatically. Otherwise, you have to choose the save file from the list.")
 
 		self:iterate_savefiles(function(result_data)
-			local slots_for_version = {
-				["1.6.2"] = 11,
-				["1.15.1"] = 37,
-				["1.37.1"] = 76,
-			}
-
-			local savefile_donor = slots_for_version[SBLT_CUS:game_version()]
-			if savefile_donor and result_data[savefile_donor] then
-				message_dialog(slot_names[savefile_donor], string.format("Progress is fetched from the file %s.", savefile_name(savefile_donor)))
-				self:_load(slots_for_version[SBLT_CUS:game_version()])
-			elseif donor_slot and donor_data then
-				message_dialog("Progress is copied", string.format("Progress is got fetched from %s.", update_name(donor_slot)))
-				Global.save_slots[game_ver] = donor_data
-				self:perform_load(cache, progress_port)
-			else
-				self:port_progress_dialog(result_data, true)
-			end
+			self:port_progress_dialog(result_data, true)
 		end)
 		
 		return
+	end
+
+	local game_version = Global.save_slots[save_slot].game_version
+	if progress_port or not game_version or (game_version and game_version ~= SBLT_CUS:game_version()) then
+		Global.save_slots[save_slot].game_version = SBLT_CUS:game_version()
+
+		if Global.save_slots[save_slot].SkillTreeManager.VERSION > managers.skilltree.VERSION then
+			managers.skilltree:save(Global.save_slots[save_slot])
+			managers.menu:show_skilltree_reseted()
+		end
+		
+		Global.save_slots[save_slot].stashed_items = Global.save_slots[save_slot].stashed_items or {}
+
+		local default = managers.blackmarket:get_default_mask_blueprint()
+		local blueprint_items = {
+			color = "colors",
+			color_a = "colors",
+			color_b = "colors",
+			color_c = "colors",
+			material = "materials",
+			pattern = "textures",
+		}
+
+		for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
+			local return_from_stash_allowed = true
+
+			if item.mask_id then
+				if tweak_data.blackmarket.masks[item.mask_id] then
+					for type_id, blueprints_tweak in pairs(blueprint_items) do
+						if not default[type_id] and item.blueprint[type_id] then
+							return_from_stash_allowed = false
+						elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+							return_from_stash_allowed = false
+						end
+					end
+				end
+			else
+				if not tweak_data.weapon[item.weapon_id] then
+					return_from_stash_allowed = false
+				else
+					for part_index, part_id in pairs(item.blueprint) do
+						if not tweak_data.weapon.factory.parts[part_id] then
+							return_from_stash_allowed = false
+							break
+						end
+					end
+				end
+			end
+
+			if return_from_stash_allowed then
+				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
+				HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category, item.mask_id or item.weapon_id, item.slot), string.format("Item is returned to the inventory."))
+				Global.save_slots[save_slot].stashed_items[id] = nil
+			end
+		end
+
+		local function add_to_stash(category, id, item)
+			if not self["stashed_equipped_" .. category] then
+				self["stashed_equipped_" .. category] = item.equipped
+			end
+			
+			item.category = category
+			item.slot = id
+			item.equipped = false
+			table.insert(Global.save_slots[save_slot].stashed_items, item)
+			Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
+			HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category), string.format("This item is stashed, because it does not compatible on this version or have modded with uncompatible items. It will be returned back as soon as you will lauch the version where it's compatible."))
+		end
+
+		for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
+			for id, item in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category]) do
+				if item.mask_id then
+					if not tweak_data.blackmarket.masks[item.mask_id] then
+						add_to_stash("masks", id, item)
+					else
+						for type_id, blueprints_tweak in pairs(blueprint_items) do
+							if not default[type_id] and item.blueprint[type_id] then
+								add_to_stash("masks", id, item)
+							elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+								add_to_stash("masks", id, item)
+							end
+						end
+					end
+				else
+					if not tweak_data.weapon[item.weapon_id] then
+						add_to_stash(category, id, item)
+					else
+						for part_index, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
+							if not tweak_data.weapon.factory.parts[part_id] then
+								add_to_stash(category, id, item)
+								break
+							end
+						end
+					end
+				end
+			end
+
+			if self["stashed_equipped_" .. category] then
+				if category == "masks" then
+					Global.save_slots[save_slot].blackmarket.crafted_items[category][1].equipped = true
+				else
+					local weapon_id = category == "primaries" and "amcar" or "glock_17"
+					local factory_id = managers.weapon_factory:get_factory_id_by_weapon_id(weapon_id)
+					local blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(factory_id))
+					
+					table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], 1, {
+						weapon_id = weapon_id,
+						factory_id = factory_id,
+						blueprint = blueprint,
+						equipped = true
+					})
+				end
+			end
+		end
+
+		Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
+		Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
 	end
 
 	if type(data) == "table" and table.size(data) > 0 then
@@ -308,32 +320,35 @@ function SavefileManager:_load(selected_slot)
 	end
 end
 
-function SavefileManager:_save(slot, ignore_current_progress, save_system)
-	if not ignore_current_progress then
-		local save_slot = Global.save_slots[game_ver] or {}
-		for _, class in pairs(managers_list) do
-			if managers[class] then
-				if type(managers[class].save) == "function" then
-					managers[class]:save(save_slot)
-				end
+function SavefileManager:perform_save(save_tbl)
+	for _, class in pairs(managers_list) do
+		if managers[class] then
+			if type(managers[class].save) == "function" then
+				managers[class]:save(save_tbl)
+			end
 
-				if type(managers[class].save_savedata) == "function" then
-					managers[class]:save_savedata(save_slot)
-				end
+			if type(managers[class].save_savedata) == "function" then
+				managers[class]:save_savedata(save_tbl)
+			end
 
-				if type(managers[class].save_settings) == "function" then
-					managers[class]:save_settings(save_slot)
-				end
+			if type(managers[class].save_settings) == "function" then
+				managers[class]:save_settings(save_tbl)
+			end
 
-				if type(managers[class].save_job_values) == "function" then
-					managers[class]:save_job_values(save_slot)
-				end
+			if type(managers[class].save_job_values) == "function" then
+				managers[class]:save_job_values(save_tbl)
+			end
 
-				if type(managers[class].save_profile) == "function" then
-					managers[class]:save_profile(save_slot)
-				end
+			if type(managers[class].save_profile) == "function" then
+				managers[class]:save_profile(save_tbl)
 			end
 		end
+	end
+end
+
+function SavefileManager:_save(slot, ignore_current_progress, save_system)
+	if not ignore_current_progress then
+		self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {})
 	end
 
 	if type(SaveGameManager) == "userdata" then

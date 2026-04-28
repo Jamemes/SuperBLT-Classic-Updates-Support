@@ -34,3 +34,7 @@ function MenuCallbackHandler:port_progress_from_savefile_call()
 		managers.savefile:port_progress_dialog(result_data)
 	end)
 end
+
+Hooks:PostHook(MenuManager, "do_clear_progress", "SBLT_CUS.MenuManager.do_clear_progress.reset_stashed_items", function()
+	Global.save_slots[Global.save_slots.current_slot].stashed_items = {}
+end)
