@@ -1,4 +1,11 @@
+if not tweak_data.lootdrop.global_values.infamy then
+    tweak_data.lootdrop.global_values.infamy = tweak_data.lootdrop.global_values.infamous
+    tweak_data.money_manager.global_value_multipliers.infamy = tweak_data.money_manager.global_value_multipliers.infamous
+    tweak_data.money_manager.global_value_bonus_multiplier.infamy = tweak_data.money_manager.global_value_bonus_multiplier.infamous
+end
+
 tweak_data.screen_colors.dark_bg = Color(0.65, 0, 0, 0)
+
 if (blt and blt.db_create_entry) or (DB and DB.create_entry) then
 	local boosts_atlas = "guis/dlcs/cee/textures/pd2/crime_spree/boosts_atlas"
 	tweak_data.hud_icons.csb_pagers = { texture = boosts_atlas, texture_rect = { 128 * 6, 128 * 1, 128, 128 } }

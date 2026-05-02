@@ -47,13 +47,13 @@ local function savefile_name(slot)
 	return string.format("save%s.sav", string.rep("0", 3 - string.len(slot)) .. slot)
 end
 
-local function update_name(slot)
-	local first = string.sub(tostring(slot), 0, 1)
-	local ver, _ = string.gsub(tostring(slot), ".", first .. "%.", 1)
-	local ver_str = tweak_data.updates_table[ver] or tostring(slot)
-	ver_str = ver_str ~= "Release" and "Update " .. ver_str or ver_str
-	return ver_str
-end
+-- local function update_name(slot)
+-- 	local first = string.sub(tostring(slot), 0, 1)
+-- 	local ver, _ = string.gsub(tostring(slot), ".", first .. "%.", 1)
+-- 	local ver_str = tweak_data.updates_table[ver] or tostring(slot)
+-- 	ver_str = ver_str ~= "Release" and "Update " .. ver_str or ver_str
+-- 	return ver_str
+-- end
 
 local function message_dialog(title, text)
 	managers.system_menu:show({
@@ -101,12 +101,13 @@ end
 function SavefileManager:perform_load(cache, progress_port)
 	if cache then
 		if progress_port then
+			Global.save_slots = Global.save_slots or {}
 			managers.menu:do_clear_progress()
 			if not cache.UserManager then
 				managers.user:save(cache)
 			end
-			local save_slot = Global.save_slots.current_slot
-			Global.save_slots[save_slot] = Global.save_slots[save_slot] or {}
+			local save_slot = Global.save_slots.current_slot or 1
+			Global.save_slots[save_slot] = {}
 			self:perform_save(Global.save_slots[save_slot])
 
 			for tbl, data in pairs(cache) do
@@ -121,8 +122,6 @@ function SavefileManager:perform_load(cache, progress_port)
 	local save_slot = Global.save_slots.current_slot
 	local data = Global.save_slots[save_slot]
 	if not data then
-		-- message_dialog("New Save Management System", "Data is not found.\n\nSuperBLT-CUS using it's own save management, your progresses from all versions will be separately stored into the single save file. If you have played u24.2, u37.1, and u76, system will port the progress automatically. Otherwise, you have to choose the save file from the list.")
-
 		self:iterate_savefiles(function(result_data)
 			self:port_progress_dialog(result_data, true)
 		end)
@@ -133,10 +132,14 @@ function SavefileManager:perform_load(cache, progress_port)
 	local game_version = Global.save_slots[save_slot].game_version
 	if progress_port or not game_version or (game_version and game_version ~= SBLT_CUS:game_version()) then
 		Global.save_slots[save_slot].game_version = SBLT_CUS:game_version()
-
-		if Global.save_slots[save_slot].SkillTreeManager.VERSION > managers.skilltree.VERSION then
-			managers.skilltree:save(Global.save_slots[save_slot])
-			managers.menu:show_skilltree_reseted()
+		if Global.save_slots[save_slot].SkillTreeManager.VERSION ~= managers.skilltree.VERSION then
+			Global.save_slots[save_slot]["SkillTreeManager" .. Global.save_slots[save_slot].SkillTreeManager.VERSION] = Global.save_slots[save_slot].SkillTreeManager
+			if Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION] then
+				Global.save_slots[save_slot].SkillTreeManager = Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION]
+			else
+				managers.skilltree:save(Global.save_slots[save_slot])
+				managers.menu:show_skilltree_reseted()
+			end
 		end
 		
 		Global.save_slots[save_slot].stashed_items = Global.save_slots[save_slot].stashed_items or {}
@@ -170,7 +173,7 @@ function SavefileManager:perform_load(cache, progress_port)
 				if not tweak_data.weapon[item.weapon_id] then
 					return_from_stash_allowed = false
 				else
-					for part_index, part_id in pairs(item.blueprint) do
+					for _, part_id in pairs(item.blueprint) do
 						if not tweak_data.weapon.factory.parts[part_id] then
 							return_from_stash_allowed = false
 							break
@@ -181,7 +184,7 @@ function SavefileManager:perform_load(cache, progress_port)
 
 			if return_from_stash_allowed then
 				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-				HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), string.format("Item is returned to the inventory."))
+				HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), "The item has been returned to the inventory.")
 				Global.save_slots[save_slot].stashed_items[id] = nil
 			end
 		end
@@ -196,7 +199,7 @@ function SavefileManager:perform_load(cache, progress_port)
 			item.equipped = false
 			table.insert(Global.save_slots[save_slot].stashed_items, item)
 			Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
-			HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), string.format("This item is stashed, because it does not compatible on this version or have modded with uncompatible items. It will be returned back as soon as you will lauch the version where it's compatible."))
+			HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), "This item is hidden because it is incompatible with this version of the game or modified with incompatible items and will be returned when you launch the version where this item will be available.")
 		end
 
 		for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
@@ -205,11 +208,15 @@ function SavefileManager:perform_load(cache, progress_port)
 					if not tweak_data.blackmarket.masks[item.mask_id] then
 						add_to_stash("masks", id, item)
 					else
-						for type_id, blueprints_tweak in pairs(blueprint_items) do
-							if not default[type_id] and item.blueprint[type_id] then
-								add_to_stash("masks", id, item)
-							elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
-								add_to_stash("masks", id, item)
+						if id == 1 then
+							Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint = default
+						else
+							for type_id, blueprints_tweak in pairs(blueprint_items) do
+								if not default[type_id] and item.blueprint[type_id] then
+									add_to_stash("masks", id, item)
+								elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+									add_to_stash("masks", id, item)
+								end
 							end
 						end
 					end
@@ -247,6 +254,7 @@ function SavefileManager:perform_load(cache, progress_port)
 
 		Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
 		Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
+		managers.blackmarket:verify_dlc_items()
 	end
 
 	if type(data) == "table" and table.size(data) > 0 then
@@ -287,22 +295,24 @@ function SavefileManager:perform_load(cache, progress_port)
 end
 
 function SavefileManager:_load(selected_slot)
+	local error_text = "Save file can't be loaded: %s.\n\nYou need to select the save file on which you last played in the old save system. This option will not affect your save files, it will only read one of them and transfer the data from there to the new system.\nAfter that, you can play any version of the game without harming your saved data."
 	if type(SaveGameManager) == "userdata" then
-		SaveGameManager:load({
+		local task_data = {
 			queued_in_save_manager = true,
 			task_type = 2,
 			first_slot = selected_slot or self.PROGRESS_SLOT,
 			save_system = self.SAVE_SYSTEM
-		}, function(_, result_data)
-			if type_name(result_data) == "table" then
-				for slot, slot_data in pairs(result_data) do
-					if slot == (slot or self.PROGRESS_SLOT) and slot_data.status == "OK" then
-						self:perform_load(slot_data.data, selected_slot)
+		}
 
-						break
-					else
-						self:perform_load({}, selected_slot)
-					end
+		SaveGameManager:load(task_data, function(_, result_data)
+			local slot_data = type_name(result_data) == "table" and result_data[selected_slot or self.PROGRESS_SLOT]
+			log(slot_data and slot_data.status)
+			if slot_data then
+				if slot_data.status == "OK" then
+					self:perform_load(slot_data.data, selected_slot)
+				else
+					message_dialog("New Save Management System", string.format(error_text, slot_data.status))
+					self:perform_load({}, selected_slot)
 				end
 			end
 		end)
@@ -316,6 +326,7 @@ function SavefileManager:_load(selected_slot)
 			if save_data:status() == SaveData.OK then
 				self:perform_load(save_data:information(), selected_slot)
 			else
+				message_dialog("New Save Management System", string.format(error_text, table.get_key(SaveData, save_data:status())))
 				self:perform_load({}, selected_slot)
 			end
 		end, function() end))
@@ -323,6 +334,7 @@ function SavefileManager:_load(selected_slot)
 end
 
 function SavefileManager:perform_save(save_tbl)
+	local old_data = deep_clone(save_tbl)
 	for _, class in pairs(managers_list) do
 		if managers[class] then
 			if type(managers[class].save) == "function" then
@@ -345,6 +357,10 @@ function SavefileManager:perform_save(save_tbl)
 				managers[class]:save_profile(save_tbl)
 			end
 		end
+	end
+
+	if not managers.infamy and old_data.ExperienceManager then
+		save_tbl.ExperienceManager.rank = old_data.ExperienceManager.rank
 	end
 end
 
@@ -523,4 +539,13 @@ end
 
 function SavefileManager:is_in_loading_sequence()
 	return not self._progress_loaded
+end
+
+function SavefileManager:load_progress()
+end
+
+function SavefileManager:load_game()
+end
+
+function SavefileManager:load_settings()
 end
