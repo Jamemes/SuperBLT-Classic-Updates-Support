@@ -12,8 +12,8 @@
         "download_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/archive/refs/heads/main.zip"
     },
     {
-        "ident": "SuperBLT-CUS-dev",
-        "version": "8.1",
+        "ident": "payday2blt-dev",
+        "version": "1.4.8 [CUS-4] testing",
         "patchnotes_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/commits/dev",
         "download_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/archive/refs/heads/dev.zip"
     }
