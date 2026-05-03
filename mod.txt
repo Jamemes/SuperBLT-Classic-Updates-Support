@@ -3,7 +3,7 @@
 	"description" : "The collection of Lua files that allow the BLT hook to function.",
 	"author" : "ZNix, James Wilkinson",
 	"contact" : "znix@znix.xyz",
-	"version" : "1.4.8 [CUS-3]",
+	"version" : "1.4.8 [CUS-4] testing",
 	"blt_version" : 2,
 	"priority" : 1001,
 	"image" : "blt.dds",
@@ -13,7 +13,7 @@
 	"disable_safe_mode" : true,
 	"updates" : [
 		{
-			"identifier" : "payday2blt-cus",
+			"identifier" : "payday2blt-dev",
 			"host": {
 				"meta": "https://raw.githubusercontent.com/Jamemes/SuperBLT-Classic-Updates-Support/meta/meta.json"
 			}

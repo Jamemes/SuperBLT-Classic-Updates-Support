@@ -254,7 +254,6 @@ function SavefileManager:perform_load(cache, progress_port)
 
 		Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
 		Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
-		managers.blackmarket:verify_dlc_items()
 	end
 
 	if type(data) == "table" and table.size(data) > 0 then
@@ -289,6 +288,8 @@ function SavefileManager:perform_load(cache, progress_port)
 		if progress_port then
 			managers.menu:back(true)
 		end
+
+		managers.blackmarket:verify_dlc_items()
 	end
 
 	self._progress_loaded = true
