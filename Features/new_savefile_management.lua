@@ -3,6 +3,7 @@ SavefileManager.SAVE_SYSTEM = type(Steam) ~= "userdata" and "local_hdd" or "stea
 SavefileManager.PROGRESS_SLOT = 2013
 SavefileManager.BACKUP_SLOT = 2013
 SavefileManager._task_queue = {}
+SavefileManager.max_slots = 10
 
 local managers_list = {
 	"user",
@@ -47,19 +48,17 @@ local function savefile_name(slot)
 	return string.format("save%s.sav", string.rep("0", 3 - string.len(slot)) .. slot)
 end
 
--- local function update_name(slot)
--- 	local first = string.sub(tostring(slot), 0, 1)
--- 	local ver, _ = string.gsub(tostring(slot), ".", first .. "%.", 1)
--- 	local ver_str = tweak_data.updates_table[ver] or tostring(slot)
--- 	ver_str = ver_str ~= "Release" and "Update " .. ver_str or ver_str
--- 	return ver_str
--- end
+local function message_dialog(title, text, func, ok_button_text)
+	local button_ok = {text = ok_button_text or managers.localization:text("dialog_ok")}
 
-local function message_dialog(title, text)
+	if func then
+		button_ok.callback_func = func
+	end
+
 	managers.system_menu:show({
 		title = title,
 		text = text,
-		button_list = {{text = managers.localization:text("dialog_ok")}}
+		button_list = {button_ok}
 	})
 end
 
@@ -82,178 +81,187 @@ function SavefileManager:storage_changed()
 	self:_load()
 end
 
-function SavefileManager:get_progress_from_older_version_slot(save_slot)
-    if not tonumber(save_slot) then
-        return
-    end
-
-    local donor_slot, donor_data = nil, nil
-    for slot_version, data in pairs(Global.save_slots) do
-        local slot_ver_num = tonumber(slot_version)
-        if slot_ver_num and tonumber(save_slot) > tonumber(slot_ver_num) and tonumber(slot_ver_num) > tonumber(donor_slot or 0) then
-            donor_slot, donor_data = slot_version, data
-        end
-    end
-
-    return donor_slot, donor_data
-end
-
-function SavefileManager:perform_load(cache, progress_port)
-	if cache then
-		if progress_port then
-			Global.save_slots = Global.save_slots or {}
-			managers.menu:do_clear_progress()
-			if not cache.UserManager then
-				managers.user:save(cache)
-			end
-			local save_slot = Global.save_slots.current_slot or 1
-			Global.save_slots[save_slot] = {}
-			self:perform_save(Global.save_slots[save_slot])
-
-			for tbl, data in pairs(cache) do
-				Global.save_slots[save_slot][tbl] = data
-			end
-		else
-			cache.current_slot = current_slot or 1
-			Global.save_slots = cache
-		end
-	end
-	
+function SavefileManager:saved_data_fix()
 	local save_slot = Global.save_slots.current_slot
-	local data = Global.save_slots[save_slot]
-	if not data then
-		self:iterate_savefiles(function(result_data)
-			self:port_progress_dialog(result_data, true)
-		end)
-		
+	if not Global.save_slots[save_slot] then
 		return
 	end
 
-	local game_version = Global.save_slots[save_slot].game_version
-	if progress_port or not game_version or (game_version and game_version ~= SBLT_CUS:game_version()) then
-		Global.save_slots[save_slot].game_version = SBLT_CUS:game_version()
-		if Global.save_slots[save_slot].SkillTreeManager.VERSION ~= managers.skilltree.VERSION then
-			Global.save_slots[save_slot]["SkillTreeManager" .. Global.save_slots[save_slot].SkillTreeManager.VERSION] = Global.save_slots[save_slot].SkillTreeManager
-			if Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION] then
-				Global.save_slots[save_slot].SkillTreeManager = Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION]
+	if Global.save_slots[save_slot].SkillTreeManager.VERSION ~= managers.skilltree.VERSION then
+		Global.save_slots[save_slot]["SkillTreeManager" .. Global.save_slots[save_slot].SkillTreeManager.VERSION] = Global.save_slots[save_slot].SkillTreeManager
+		if Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION] then
+			Global.save_slots[save_slot].SkillTreeManager = Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION]
+		else
+			managers.skilltree:save(Global.save_slots[save_slot])
+			managers.menu:show_skilltree_reseted()
+		end
+	end
+	
+	Global.save_slots[save_slot].stashed_items = Global.save_slots[save_slot].stashed_items or {}
+
+	local default = managers.blackmarket:get_default_mask_blueprint()
+	local blueprint_items = {
+		color = "colors",
+		color_a = "colors",
+		color_b = "colors",
+		color_c = "colors",
+		material = "materials",
+		pattern = "textures",
+	}
+
+	for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
+		local return_from_stash_allowed = true
+
+		if item.mask_id then
+			if tweak_data.blackmarket.masks[item.mask_id] then
+				for type_id, blueprints_tweak in pairs(blueprint_items) do
+					if not default[type_id] and item.blueprint[type_id] then
+						return_from_stash_allowed = false
+					end
+					
+					if (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+						return_from_stash_allowed = false
+					end
+				end
+			end
+		else
+			if not tweak_data.weapon[item.weapon_id] then
+				return_from_stash_allowed = false
 			else
-				managers.skilltree:save(Global.save_slots[save_slot])
-				managers.menu:show_skilltree_reseted()
+				for _, part_id in pairs(item.blueprint) do
+					if not tweak_data.weapon.factory.parts[part_id] then
+						return_from_stash_allowed = false
+						break
+					end
+				end
 			end
 		end
+
+		if return_from_stash_allowed then
+			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
+			HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), "The item has been returned to the inventory.")
+			Global.save_slots[save_slot].stashed_items[id] = nil
+		end
+	end
+
+	local function add_to_stash(category, id, item)
+		if not self["stashed_equipped_" .. category] then
+			self["stashed_equipped_" .. category] = item.equipped
+		end
 		
-		Global.save_slots[save_slot].stashed_items = Global.save_slots[save_slot].stashed_items or {}
+		item.category = category
+		item.slot = id
+		item.equipped = false
+		table.insert(Global.save_slots[save_slot].stashed_items, item)
+		Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
+		HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), "This item is hidden because it is incompatible with this version of the game or modified with incompatible items and will be returned when you launch the version where this item will be available.")
+	end
 
-		local default = managers.blackmarket:get_default_mask_blueprint()
-		local blueprint_items = {
-			color = "colors",
-			color_a = "colors",
-			color_b = "colors",
-			color_c = "colors",
-			material = "materials",
-			pattern = "textures",
-		}
-
-		for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
-			local return_from_stash_allowed = true
-
+	for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
+		for id, item in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category]) do
 			if item.mask_id then
-				if tweak_data.blackmarket.masks[item.mask_id] then
-					for type_id, blueprints_tweak in pairs(blueprint_items) do
-						if not default[type_id] and item.blueprint[type_id] then
-							return_from_stash_allowed = false
-						end
-						
-						if (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
-							return_from_stash_allowed = false
+				if not tweak_data.blackmarket.masks[item.mask_id] then
+					add_to_stash("masks", id, item)
+				else
+					if id == 1 then
+						Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint = default
+					else
+						for type_id, blueprints_tweak in pairs(blueprint_items) do
+							if not default[type_id] and item.blueprint[type_id] then
+								add_to_stash("masks", id, item)
+							elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+								add_to_stash("masks", id, item)
+							end
 						end
 					end
 				end
 			else
 				if not tweak_data.weapon[item.weapon_id] then
-					return_from_stash_allowed = false
+					add_to_stash(category, id, item)
 				else
-					for _, part_id in pairs(item.blueprint) do
+					for part_index, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
 						if not tweak_data.weapon.factory.parts[part_id] then
-							return_from_stash_allowed = false
+							add_to_stash(category, id, item)
 							break
 						end
 					end
 				end
 			end
+		end
 
-			if return_from_stash_allowed then
-				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-				HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), "The item has been returned to the inventory.")
-				Global.save_slots[save_slot].stashed_items[id] = nil
+		if self["stashed_equipped_" .. category] then
+			if category == "masks" then
+				Global.save_slots[save_slot].blackmarket.crafted_items[category][1].equipped = true
+			else
+				local weapon_id = category == "primaries" and "amcar" or "glock_17"
+				local factory_id = managers.weapon_factory:get_factory_id_by_weapon_id(weapon_id)
+				local blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(factory_id))
+				
+				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], 1, {
+					weapon_id = weapon_id,
+					factory_id = factory_id,
+					blueprint = blueprint,
+					equipped = true
+				})
+			end
+		end
+	end
+
+	Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
+	Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
+end
+
+function SavefileManager:perform_load(cache, progress_port)
+	local matchmake_key = managers.network.matchmake._BUILD_SEARCH_INTEREST_KEY
+	if not progress_port then
+		Global.save_slots = cache or {}
+		Global.save_slots.current_slot = Global.save_slots.current_slot or 1
+	end
+
+	if progress_port and cache then
+		if not cache.UserManager then
+			managers.user:save(cache)
+			cache.UserManager[10] = false
+			cache.UserManager[36] = 1.4
+		end
+
+		Global.save_slots[Global.save_slots.current_slot] = cache
+		Global.save_slots[Global.save_slots.current_slot].game_version = matchmake_key
+	end
+
+
+	local data = Global.save_slots[Global.save_slots.current_slot]
+	if not data then
+		self:port_progress()
+		
+		return
+	end
+
+	local game_version = Global.save_slots[Global.save_slots.current_slot].game_version
+	if game_version ~= matchmake_key then
+		local version_matched = nil
+		for slot, slot_data in pairs(Global.save_slots) do
+			if type(slot_data) == "table" and slot_data.game_version and slot_data.game_version == matchmake_key then
+				version_matched = slot
 			end
 		end
 
-		local function add_to_stash(category, id, item)
-			if not self["stashed_equipped_" .. category] then
-				self["stashed_equipped_" .. category] = item.equipped
-			end
-			
-			item.category = category
-			item.slot = id
-			item.equipped = false
-			table.insert(Global.save_slots[save_slot].stashed_items, item)
-			Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
-			HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), "This item is hidden because it is incompatible with this version of the game or modified with incompatible items and will be returned when you launch the version where this item will be available.")
+		if version_matched then
+			message_dialog("Different game version", "The slot has been switched.\n\nFound a slot whose version matches the current version of the game.")
+			data = Global.save_slots[version_matched]
+			Global.save_slots.current_slot = version_matched
+		else
+			message_dialog("Different game version", "There is no slot that matches the current version. You must select the slot manually.")
+			self:change_slot()
+			return
 		end
+	end
 
-		for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
-			for id, item in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category]) do
-				if item.mask_id then
-					if not tweak_data.blackmarket.masks[item.mask_id] then
-						add_to_stash("masks", id, item)
-					else
-						if id == 1 then
-							Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint = default
-						else
-							for type_id, blueprints_tweak in pairs(blueprint_items) do
-								if not default[type_id] and item.blueprint[type_id] then
-									add_to_stash("masks", id, item)
-								elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
-									add_to_stash("masks", id, item)
-								end
-							end
-						end
-					end
-				else
-					if not tweak_data.weapon[item.weapon_id] then
-						add_to_stash(category, id, item)
-					else
-						for part_index, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
-							if not tweak_data.weapon.factory.parts[part_id] then
-								add_to_stash(category, id, item)
-								break
-							end
-						end
-					end
-				end
-			end
+	self:saved_data_fix()
 
-			if self["stashed_equipped_" .. category] then
-				if category == "masks" then
-					Global.save_slots[save_slot].blackmarket.crafted_items[category][1].equipped = true
-				else
-					local weapon_id = category == "primaries" and "amcar" or "glock_17"
-					local factory_id = managers.weapon_factory:get_factory_id_by_weapon_id(weapon_id)
-					local blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(factory_id))
-					
-					table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], 1, {
-						weapon_id = weapon_id,
-						factory_id = factory_id,
-						blueprint = blueprint,
-						equipped = true
-					})
-				end
-			end
-		end
-
-		Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
-		Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
+	if progress_port then
+		Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
+		managers.menu:do_clear_progress()
 	end
 
 	if type(data) == "table" and table.size(data) > 0 then
@@ -285,14 +293,30 @@ function SavefileManager:perform_load(cache, progress_port)
 			managers.menu_scene:on_blackmarket_reset()
 		end
 
-		if progress_port then
-			managers.menu:back(true)
+		if managers.menu_component then
+			managers.menu_component:refresh_player_profile_gui()
 		end
+
+		self:refresh_current_slot_name()
 
 		managers.blackmarket:verify_dlc_items()
 	end
 
-	self._progress_loaded = true
+	if progress_port then
+		self:_save()
+	end
+
+	Global.savefile_manager.progress_loaded = true
+
+	if data.job_preserved then
+		Global.job_manager = data.job_preserved.job_manager
+		Global.game_settings = data.job_preserved.game_settings
+		Global.loot_manager = data.job_preserved.loot_manager
+		Global.asset_manager = data.job_preserved.asset_manager
+		Global.mission_manager = data.job_preserved.mission_manager
+		managers.job:activate_job(Global.job_manager.current_job.job_id)
+		managers.network.matchmake:create_lobby(MenuCallbackHandler:get_matchmake_attributes())
+	end
 end
 
 function SavefileManager:_load(selected_slot)
@@ -307,13 +331,17 @@ function SavefileManager:_load(selected_slot)
 
 		SaveGameManager:load(task_data, function(_, result_data)
 			local slot_data = type_name(result_data) == "table" and result_data[selected_slot or self.PROGRESS_SLOT]
-			log(slot_data and slot_data.status)
 			if slot_data then
-				if slot_data.status == "OK" then
-					self:perform_load(slot_data.data, selected_slot)
+				if slot_data.status ~= "OK" then
+					message_dialog("New Save Management System", string.format(error_text, slot_data.status), function()
+						if slot_data.status == "FILE_NOT_FOUND" then
+							self:perform_load(slot_data.data, selected_slot)
+						else
+							self:_load(selected_slot)
+						end
+					end, slot_data.status ~= "FILE_NOT_FOUND" and "Try again")
 				else
-					message_dialog("New Save Management System", string.format(error_text, slot_data.status))
-					self:perform_load({}, selected_slot)
+					self:perform_load(slot_data.data, selected_slot)
 				end
 			end
 		end)
@@ -324,17 +352,24 @@ function SavefileManager:_load(selected_slot)
 		})
 
 		table.insert(self._task_queue, SavefileTaskHandler:new(task, 2, function(save_data)
-			if save_data:status() == SaveData.OK then
-				self:perform_load(save_data:information(), selected_slot)
+			local status = table.get_key(SaveData, save_data:status())
+			if status ~= "OK" then
+				message_dialog("New Save Management System", string.format(error_text, status), function()
+					if status == "FILE_NOT_FOUND" then
+						self:perform_load(save_data:information(), selected_slot)
+					else
+						self:_load(selected_slot)
+					end
+				end, status ~= "FILE_NOT_FOUND" and "Try again")
 			else
-				message_dialog("New Save Management System", string.format(error_text, table.get_key(SaveData, save_data:status())))
-				self:perform_load({}, selected_slot)
+				self:perform_load(save_data:information(), selected_slot)
 			end
 		end, function() end))
 	end
 end
 
-function SavefileManager:perform_save(save_tbl)
+function SavefileManager:perform_save(save_tbl, param)
+	save_tbl.save_time = os.date()
 	local old_data = deep_clone(save_tbl)
 	for _, class in pairs(managers_list) do
 		if managers[class] then
@@ -363,12 +398,42 @@ function SavefileManager:perform_save(save_tbl)
 	if not managers.infamy and old_data.ExperienceManager then
 		save_tbl.ExperienceManager.rank = old_data.ExperienceManager.rank
 	end
+
+	if (param == "lobby_reserve" or param == "victoryscreen_reserve") and _G.LuaNetworking:IsHost() then
+		local job_manager = deep_clone(Global.job_manager)
+		local game_settings = deep_clone(Global.game_settings)
+		local loot_manager = deep_clone(Global.loot_manager)
+		local job_data = job_manager.current_job
+
+		if param == "victoryscreen_reserve" then
+			if job_manager.next_alternative_stage then
+				job_manager.alternative_stage = job_manager.next_alternative_stage
+				job_manager.next_alternative_stage = nil
+			elseif job_manager.next_interupt_stage then
+				job_manager.interupt_stage = job_manager.next_interupt_stage
+				job_manager.next_interupt_stage = nil
+			elseif job_data.current_stage + 1 <= job_data.stages then
+				job_data.current_stage = job_data.current_stage + 1
+				job_data.last_completed_stage = job_data.last_completed_stage + 1
+			end
+
+			local narrative_data = tweak_data.narrative.jobs[job_data.job_id]
+			local stage = narrative_data.chain[job_data.current_stage]
+			game_settings.level_id = job_manager.interupt_stage or job_manager.alternative_stage or stage.level_id
+		end
+
+		save_tbl.job_preserved = {
+			job_manager = job_manager,
+			game_settings = game_settings,
+			loot_manager = loot_manager,
+			asset_manager = Global.asset_manager,
+			mission_manager = Global.mission_manager,
+		}
+	end
 end
 
-function SavefileManager:_save(slot, ignore_current_progress, save_system)
-	if not ignore_current_progress then
-		self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {})
-	end
+function SavefileManager:_save(param, _, save_system)
+	self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {}, param)
 
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:save({
@@ -394,29 +459,11 @@ function SavefileManager:_save(slot, ignore_current_progress, save_system)
 		SavefileTaskHandler:new(NewSave:save(save_data, param_map), 3, function() end, nil, "progress")
 	end
 
+	self:refresh_current_slot_name(true)
 	self:show_icon(utf8.to_upper(managers.localization:text("savefile_saving")))
 end
 
-function SavefileManager:iterate_savefiles(func)
-	if type(SaveGameManager) == "userdata" then
-		SaveGameManager:iterate_savegame_slots({
-			queued_in_save_manager = true,
-			task_type = 6,
-			save_system = self.SAVE_SYSTEM,
-			first_slot = self.MIN_SLOT,
-			last_slot = self.MAX_SLOT
-		}, function(task_data, result_data)
-			func(result_data)
-		end)
-	elseif type(NewSave) == "userdata" then
-		local result_data = {}
-		table.insert(self._task_queue, SavefileTaskHandler:new(NewSave:all_slots({save_system = self.SAVE_SYSTEM}), 1, function(slot)
-			result_data[slot] = true
-		end, function() func(result_data) end))
-	end
-end
-
-function SavefileManager:port_confirm_dialog(result_data, no_data_found, slot)
+function SavefileManager:port_confirm_dialog(result_data, slot)
 	local dialog_data = {
 		button_list = {}
 	}
@@ -431,31 +478,34 @@ function SavefileManager:port_confirm_dialog(result_data, no_data_found, slot)
 	table.insert(dialog_data.button_list, {
 		text = managers.localization:text("dialog_yes"),
 		callback_func = function()
+			if self._empty_slot then
+				Global.save_slots.current_slot = self._empty_slot
+				self._empty_slot = nil
+				self:show_icon("SLOT CHANGED")
+			end
+			
 			if slot then
-				managers.savefile:_load(slot)
+				self:_load(slot)
 			else
-				self._progress_loaded = true
+				local new_data = {}
+				self:perform_save(new_data)
+				self:perform_load(new_data, "port_progress")
 			end
 		end
 	})
 
-	local cancel_button = {
+	table.insert(dialog_data.button_list, {
 		text = managers.localization:text("dialog_no"),
-		cancel_button = true
-	}
-	
-	if no_data_found then
-		cancel_button.callback_func = function()
-			self:port_progress_dialog(result_data, no_data_found)
+		cancel_button = true,
+		callback_func = function()
+			self:port_progress_dialog(result_data)
 		end
-	end
-
-	table.insert(dialog_data.button_list, cancel_button)
+	})
 
 	managers.system_menu:show(dialog_data)
 end
 
-function SavefileManager:port_progress_dialog(result_data, no_data_found)
+function SavefileManager:port_progress_dialog(result_data)
 	local dialog_data = {
 		title = "Port the Progress",
 		text = "Choose the file to port the progress.\nsaveXXX.sav",
@@ -468,7 +518,7 @@ function SavefileManager:port_progress_dialog(result_data, no_data_found)
 			text = string.format("%s%s", slot_name_text, tostring(slot)),
 			num = slot,
 			callback_func = function()
-				self:port_confirm_dialog(result_data, no_data_found, tonumber(slot))
+				self:port_confirm_dialog(result_data, slot)
 			end,
 		})
 	end
@@ -476,21 +526,129 @@ function SavefileManager:port_progress_dialog(result_data, no_data_found)
 		return a.num > b.num
 	end)
 
-	table.insert(dialog_data.button_list, {})
-	
-	local cancel_button = {
-		text = managers.localization:text("menu_back"),
-		cancel_button = true
-	}
-	
-	if no_data_found then
-		cancel_button.text = managers.localization:text("menu_clear_progress")
-		cancel_button.callback_func = function()
-			self:port_confirm_dialog(result_data, no_data_found, slot)
-		end
+	if not Global.savefile_manager.progress_loaded then
+		table.insert(dialog_data.button_list, {callback_func = function()
+			self:port_progress_dialog(result_data)
+		end})
+
+		table.insert(dialog_data.button_list, {
+			text = managers.localization:text("menu_clear_progress"),
+			callback_func = function()
+				self:port_confirm_dialog(result_data)
+			end,
+		})
 	end
 
-	table.insert(dialog_data.button_list, cancel_button)
+	if Global.savefile_manager.progress_loaded or self._empty_slot then
+		table.insert(dialog_data.button_list, {callback_func = function()
+			self:port_progress_dialog(result_data)
+		end})
+
+		local cancel_button = {
+			text = managers.localization:text("menu_back"),
+			cancel_button = true
+		}
+
+		if self._empty_slot then
+			cancel_button.callback_func = function()
+				self:change_slot()
+				self._empty_slot = nil
+			end
+		end
+
+		table.insert(dialog_data.button_list, cancel_button)
+	end
+
+	managers.system_menu:show_buttons(dialog_data)
+end
+
+function SavefileManager:port_progress()
+	if type(SaveGameManager) == "userdata" then
+		SaveGameManager:iterate_savegame_slots({
+			queued_in_save_manager = true,
+			task_type = 6,
+			save_system = self.SAVE_SYSTEM,
+			first_slot = self.MIN_SLOT,
+			last_slot = self.MAX_SLOT
+		}, function(task_data, result_data)
+			self:port_progress_dialog(result_data)
+		end)
+	elseif type(NewSave) == "userdata" then
+		local result_data = {}
+		table.insert(self._task_queue, SavefileTaskHandler:new(NewSave:all_slots({save_system = self.SAVE_SYSTEM}), 1, function(slot)
+			result_data[slot] = true
+		end, function() self:port_progress_dialog(result_data) end))
+	end
+end
+
+function SavefileManager:perform_slot_change(slot)
+	if Global.save_slots.current_slot ~= slot or not Global.savefile_manager.progress_loaded then
+		if Global.save_slots[slot] then
+			Global.save_slots.current_slot = slot
+			self:perform_load(Global.save_slots[slot], true)
+			if Global.save_slots[slot] and Global.savefile_manager.progress_loaded then
+				self:show_icon("SLOT CHANGED")
+			end
+		elseif not Global.save_slots[slot] then
+			self._empty_slot = slot
+			self:port_progress()
+		end
+	end
+end
+
+function SavefileManager:change_slot()
+	local dialog_data = {
+		title = "Choose the slot",
+		button_list = {}
+	}
+
+	for i = 1, self.max_slots do
+		table.insert(dialog_data.button_list, {
+			text = self:current_slot(Global.save_slots[i], i),
+			callback_func = function()
+				local matchmake_key = managers.network.matchmake._BUILD_SEARCH_INTEREST_KEY
+				local game_version = Global.save_slots[i] and Global.save_slots[i].game_version
+				if game_version and game_version ~= matchmake_key then
+					local dialog_data = {
+						title = "Choose the slot",
+						text = string.format("Game version: %s\nSave version: %s\n\nThis slot was used on other version of the game. All unavailable items will be stashed until you will return on the version that matched this slot. Continue?", matchmake_key, game_version),
+						button_list = {}
+					}
+
+					local yes_button = {
+						text = managers.localization:text("dialog_yes"),
+						callback_func = function()
+							self:perform_slot_change(i)
+						end
+					}
+					table.insert(dialog_data.button_list, yes_button)
+
+					local cancel_button = {
+						text = managers.localization:text("menu_back"),
+						callback_func = function()
+							self:change_slot()
+						end,
+						cancel_button = true
+					}
+					table.insert(dialog_data.button_list, cancel_button)
+
+					managers.system_menu:show(dialog_data)
+				else
+					self:perform_slot_change(i)
+				end
+			end
+		})
+	end
+
+	if Global.savefile_manager.progress_loaded then
+		table.insert(dialog_data.button_list, {})
+
+		local cancel_button = {
+			text = managers.localization:text("menu_back"),
+			cancel_button = true
+		}
+		table.insert(dialog_data.button_list, cancel_button)
+	end
 
 	managers.system_menu:show(dialog_data)
 end
@@ -501,6 +659,34 @@ function SavefileManager:show_icon(text)
 	self._show_gui_time = TimerManager:main():time()
 	self._gui_script:set_text(text)
 	self._gui_script.indicator:animate(self._gui_script.saving)
+end
+
+function SavefileManager:current_slot(save_data, slot)
+	local text = "Empty"
+	if save_data then
+		text = save_data.save_time or "--/--/--"
+
+		if save_data.game_version then
+			text = "(" .. save_data.game_version .. ")     " .. text
+		end
+	end
+
+	return string.format("%s     [Slot %s]", text, string.rep("0", math.max(2 - string.len(slot), 0)) .. slot)
+end
+
+function SavefileManager:refresh_current_slot_name(current_node)
+	local logic = managers.menu:active_menu() and managers.menu:active_menu().logic
+	if logic then
+		local node = logic:get_node("options")
+		if node and node:parameters().name == "options" then
+			local item = node:item("current_slot")
+			if item then
+				local slot = Global.save_slots.current_slot
+				item:set_parameter("text_id", self:current_slot(Global.save_slots[slot], slot))
+				managers.menu:active_menu().logic:refresh_node()
+			end
+		end
+	end
 end
 
 function SavefileManager:update(t, dt)
@@ -539,7 +725,7 @@ function SavefileManager:update(t, dt)
 end
 
 function SavefileManager:is_in_loading_sequence()
-	return not self._progress_loaded
+	return not Global.savefile_manager.progress_loaded
 end
 
 function SavefileManager:load_progress()

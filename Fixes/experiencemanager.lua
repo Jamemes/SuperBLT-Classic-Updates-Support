@@ -11,3 +11,13 @@ if type(ExperienceManager.experience_string) == "nil" then
 		return string.reverse(s)
 	end
 end
+
+Hooks:PostHook(ExperienceManager, "give_experience", "SBLT_CUS.ExperienceManager.give_experience.save_progress_after_the experience", function()
+	if game_state_machine:current_state_name() == "victoryscreen" then
+		if managers.job:on_last_stage() then
+			Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
+		else
+			managers.savefile:_save("victoryscreen_reserve")
+		end
+	end
+end)
