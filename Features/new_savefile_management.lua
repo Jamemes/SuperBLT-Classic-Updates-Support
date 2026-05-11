@@ -139,7 +139,7 @@ function SavefileManager:saved_data_fix()
 
 		if return_from_stash_allowed then
 			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-			HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), "The item has been returned to the inventory.")
+			HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), managers.localization:text("sblt_cus_returned_items"))
 			Global.save_slots[save_slot].stashed_items[id] = nil
 		end
 	end
@@ -154,7 +154,7 @@ function SavefileManager:saved_data_fix()
 		item.equipped = false
 		table.insert(Global.save_slots[save_slot].stashed_items, item)
 		Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
-		HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), "This item is hidden because it is incompatible with this version of the game or modified with incompatible items and will be returned when you launch the version where this item will be available.")
+		HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), managers.localization:text("sblt_cus_stashed_items"))
 	end
 
 	for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
@@ -247,11 +247,11 @@ function SavefileManager:perform_load(cache, progress_port)
 		end
 
 		if version_matched then
-			message_dialog("Different game version", "The slot has been switched.\n\nFound a slot whose version matches the current version of the game.")
+			message_dialog(managers.localization:text("sblt_cus_game_version_changed"), managers.localization:text("sblt_cus_slot_switched"))
 			data = Global.save_slots[version_matched]
 			Global.save_slots.current_slot = version_matched
 		else
-			message_dialog("Different game version", "There is no slot that matches the current version. You must select the slot manually.")
+			message_dialog(managers.localization:text("sblt_cus_game_version_changed"), managers.localization:text("sblt_cus_slot_not_found"))
 			self:change_slot()
 			return
 		end
@@ -320,7 +320,6 @@ function SavefileManager:perform_load(cache, progress_port)
 end
 
 function SavefileManager:_load(selected_slot)
-	local error_text = "Save file can't be loaded: %s.\n\nYou need to select the save file on which you last played in the old save system. This option will not affect your save files, it will only read one of them and transfer the data from there to the new system.\nAfter that, you can play any version of the game without harming your saved data."
 	if type(SaveGameManager) == "userdata" then
 		local task_data = {
 			queued_in_save_manager = true,
@@ -333,13 +332,13 @@ function SavefileManager:_load(selected_slot)
 			local slot_data = type_name(result_data) == "table" and result_data[selected_slot or self.PROGRESS_SLOT]
 			if slot_data then
 				if slot_data.status ~= "OK" then
-					message_dialog("New Save Management System", string.format(error_text, slot_data.status), function()
+					message_dialog("New Save Management System", string.format(slot_data.status == "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_savefile_not_found") or managers.localization:text("sblt_cus_save_not_loaded"), slot_data.status), function()
 						if slot_data.status == "FILE_NOT_FOUND" then
 							self:perform_load(slot_data.data, selected_slot)
 						else
 							self:_load(selected_slot)
 						end
-					end, slot_data.status ~= "FILE_NOT_FOUND" and "Try again")
+					end, slot_data.status ~= "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_try_again"))
 				else
 					self:perform_load(slot_data.data, selected_slot)
 				end
@@ -354,13 +353,13 @@ function SavefileManager:_load(selected_slot)
 		table.insert(self._task_queue, SavefileTaskHandler:new(task, 2, function(save_data)
 			local status = table.get_key(SaveData, save_data:status())
 			if status ~= "OK" then
-				message_dialog("New Save Management System", string.format(error_text, status), function()
+				message_dialog("New Save Management System", string.format(status == "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_savefile_not_found") or managers.localization:text("sblt_cus_save_not_loaded"), status), function()
 					if status == "FILE_NOT_FOUND" then
 						self:perform_load(save_data:information(), selected_slot)
 					else
 						self:_load(selected_slot)
 					end
-				end, status ~= "FILE_NOT_FOUND" and "Try again")
+				end, status ~= "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_try_again"))
 			else
 				self:perform_load(save_data:information(), selected_slot)
 			end
@@ -468,8 +467,8 @@ function SavefileManager:port_confirm_dialog(result_data, slot)
 		button_list = {}
 	}
 	if slot then
-		dialog_data.title = "Confirm the changes"
-		dialog_data.text = string.format("Are you sure you want port the progress from the file %s?\n\nYour current progress will be gone.", savefile_name(slot))
+		dialog_data.title = managers.localization:text("sblt_cus_confirm_changes")
+		dialog_data.text = string.format(managers.localization:text("sblt_cus_port_from_savefile"), savefile_name(slot))
 	else
 		dialog_data.title = managers.localization:text("dialog_warning_title")
 		dialog_data.text = managers.localization:text("dialog_are_you_sure_you_want_to_clear_progress")
@@ -481,7 +480,7 @@ function SavefileManager:port_confirm_dialog(result_data, slot)
 			if self._empty_slot then
 				Global.save_slots.current_slot = self._empty_slot
 				self._empty_slot = nil
-				self:show_icon("SLOT CHANGED")
+				self:show_icon(utf8.to_upper(managers.localization:text("sblt_cus_slot_changed")))
 			end
 			
 			if slot then
@@ -489,6 +488,10 @@ function SavefileManager:port_confirm_dialog(result_data, slot)
 			else
 				local new_data = {}
 				self:perform_save(new_data)
+				if new_data.UserManager then
+					new_data.UserManager[10] = false
+					new_data.UserManager[36] = 1.4
+				end
 				self:perform_load(new_data, "port_progress")
 			end
 		end
@@ -507,8 +510,8 @@ end
 
 function SavefileManager:port_progress_dialog(result_data)
 	local dialog_data = {
-		title = "Port the Progress",
-		text = "Choose the file to port the progress.\nsaveXXX.sav",
+		title = managers.localization:text("sblt_cus_port_progress"),
+		text = managers.localization:text("sblt_cus_port_dialog"),
 		button_list = {}
 	}
 
@@ -598,7 +601,7 @@ end
 
 function SavefileManager:change_slot()
 	local dialog_data = {
-		title = "Choose the slot",
+		title = managers.localization:text("sblt_cus_choose_slot"),
 		button_list = {}
 	}
 
@@ -610,8 +613,8 @@ function SavefileManager:change_slot()
 				local game_version = Global.save_slots[i] and Global.save_slots[i].game_version
 				if game_version and game_version ~= matchmake_key then
 					local dialog_data = {
-						title = "Choose the slot",
-						text = string.format("Game version: %s\nSave version: %s\n\nThis slot was used on other version of the game. All unavailable items will be stashed until you will return on the version that matched this slot. Continue?", matchmake_key, game_version),
+						title = managers.localization:text("sblt_cus_choose_slot"),
+						text = string.format(managers.localization:text("sblt_cus_dialog_different_version"), matchmake_key, game_version),
 						button_list = {}
 					}
 

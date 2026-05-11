@@ -16,8 +16,8 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_port_progress_from_savefile_input
 
 		local params = {
 			name = "port_progress",
-			text_id = "menu_port_progress",
-			help_id = "menu_port_progress_help",
+			text_id = "sblt_cus_port_progress",
+			help_id = "sblt_cus_port_progress_help",
 			callback = "port_progress_call",
 		}
 
@@ -37,8 +37,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "_add_port_progress_from_savefile_input
 		local params = {
 			name = "current_slot",
 			text_id = "",
-			help_id = "menu_change_slot_help",
-			callback = "menu_change_slot_call",
+			callback = "change_slot_call",
 			localize = false
 		}
 
@@ -57,7 +56,7 @@ function MenuCallbackHandler:port_progress_call()
 	end
 end
 
-function MenuCallbackHandler:menu_change_slot_call()
+function MenuCallbackHandler:change_slot_call()
 	if not _G.LuaNetworking:IsMultiplayer() then
 		managers.savefile:change_slot(true)
 	end

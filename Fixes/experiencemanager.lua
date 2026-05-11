@@ -19,5 +19,7 @@ Hooks:PostHook(ExperienceManager, "give_experience", "SBLT_CUS.ExperienceManager
 		else
 			managers.savefile:_save("victoryscreen_reserve")
 		end
+	elseif game_state_machine:current_state_name() == "gameoverscreen" and managers.job:is_current_job_professional() then
+		Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
 	end
 end)
