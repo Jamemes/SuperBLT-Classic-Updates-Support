@@ -78,31 +78,3 @@ Hooks:PostHook(MenuOptionInitiator, "modify_node", "SBLT_CUS.MenuOptionInitiator
 		end
 	end
 end)
-
-Hooks:PostHook(MenuManager, "on_enter_lobby", "SBLT_CUS.MenuManager.on_enter_lobby.load_preserved_heist", function()
-	if Global.save_slots[Global.save_slots.current_slot].job_preserved then
-		MenuCallbackHandler:lobby_start_the_game()
-	end
-end)
-
-Hooks:PostHook(MenuCallbackHandler, "load_start_menu_lobby", "SBLT_CUS.MenuCallbackHandler.load_start_menu_lobby.remove_preserved_heist", function()
-	Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
-end)
-
-Hooks:PostHook(MenuCallbackHandler, "_dialog_end_game_yes", "SBLT_CUS.MenuCallbackHandler._dialog_end_game_yes.remove_preserved_heist", function()
-	Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
-end)
-
-Hooks:PostHook(MenuCallbackHandler, "lobby_start_the_game", "SBLT_CUS.MenuCallbackHandler.lobby_start_the_game.preserve_the_heist", function()
-	if not Global.save_slots[Global.save_slots.current_slot].job_preserved then
-		managers.savefile:_save("lobby_reserve")
-		managers.savefile._reserve_load = true
-	end
-end)
-
-local data = MenuManager.show_question_start_tutorial
-function MenuManager:show_question_start_tutorial(params)
-	if not Global.save_slots[Global.save_slots.current_slot].job_preserved then
-		data(self, params)
-	end
-end

@@ -94,6 +94,7 @@ function SavefileManager:saved_data_fix()
 		else
 			managers.skilltree:save(Global.save_slots[save_slot])
 			managers.menu:show_skilltree_reseted()
+			Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
 		end
 	end
 	
@@ -108,7 +109,8 @@ function SavefileManager:saved_data_fix()
 		material = "materials",
 		pattern = "textures",
 	}
-
+	
+	local returned_items = ""
 	for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
 		local return_from_stash_allowed = true
 
@@ -139,11 +141,16 @@ function SavefileManager:saved_data_fix()
 
 		if return_from_stash_allowed then
 			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-			HudChallengeNotification.queue(string.format("%s %s [Slot %s]", item.category:upper(), item.mask_id or item.weapon_id, item.slot), managers.localization:text("sblt_cus_returned_items"))
+			returned_items = returned_items .. string.format("[Slot %s] %s (%s)", item.slot, item.mask_id or item.weapon_id, item.category:capitalize()) .. "\n"
 			Global.save_slots[save_slot].stashed_items[id] = nil
 		end
 	end
+	
+	if returned_items ~= "" then
+		message_dialog(managers.localization:text("sblt_cus_returned_title"), managers.localization:text("sblt_cus_returned_text") .. "\n\n" .. returned_items)
+	end
 
+	local stashed_items = ""
 	local function add_to_stash(category, id, item)
 		if not self["stashed_equipped_" .. category] then
 			self["stashed_equipped_" .. category] = item.equipped
@@ -154,7 +161,7 @@ function SavefileManager:saved_data_fix()
 		item.equipped = false
 		table.insert(Global.save_slots[save_slot].stashed_items, item)
 		Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
-		HudChallengeNotification.queue(string.format("%s [Slot %s] %s ", item.mask_id or item.weapon_id, id, category:upper()), managers.localization:text("sblt_cus_stashed_items"))
+		stashed_items = stashed_items .. string.format("[Slot %s] %s (%s)", id, item.mask_id or item.weapon_id, category:capitalize()) .. "\n"
 	end
 
 	for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
@@ -207,7 +214,16 @@ function SavefileManager:saved_data_fix()
 		end
 	end
 
-	Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
+	if stashed_items ~= "" then
+		message_dialog(managers.localization:text("sblt_cus_stashed_title"), managers.localization:text("sblt_cus_stashed_text") .. "\n\n" .. stashed_items)
+	end
+
+	for _, deployable in pairs(Global.save_slots[save_slot].PlayerManager.kit.equipment_slots) do
+		if not tweak_data.equipments[deployable] then
+			table.delete(Global.save_slots[save_slot].PlayerManager.kit.equipment_slots, deployable)
+		end
+	end
+
 	Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
 end
 
@@ -309,6 +325,8 @@ function SavefileManager:perform_load(cache, progress_port)
 	Global.savefile_manager.progress_loaded = true
 
 	if data.job_preserved then
+		self.job_preserved = true
+
 		Global.job_manager = data.job_preserved.job_manager
 		Global.game_settings = data.job_preserved.game_settings
 		Global.loot_manager = data.job_preserved.loot_manager
@@ -367,7 +385,7 @@ function SavefileManager:_load(selected_slot)
 	end
 end
 
-function SavefileManager:perform_save(save_tbl, param)
+function SavefileManager:perform_save(save_tbl)
 	save_tbl.save_time = os.date()
 	local old_data = deep_clone(save_tbl)
 	for _, class in pairs(managers_list) do
@@ -397,42 +415,10 @@ function SavefileManager:perform_save(save_tbl, param)
 	if not managers.infamy and old_data.ExperienceManager then
 		save_tbl.ExperienceManager.rank = old_data.ExperienceManager.rank
 	end
-
-	if (param == "lobby_reserve" or param == "victoryscreen_reserve") and _G.LuaNetworking:IsHost() then
-		local job_manager = deep_clone(Global.job_manager)
-		local game_settings = deep_clone(Global.game_settings)
-		local loot_manager = deep_clone(Global.loot_manager)
-		local job_data = job_manager.current_job
-
-		if param == "victoryscreen_reserve" then
-			if job_manager.next_alternative_stage then
-				job_manager.alternative_stage = job_manager.next_alternative_stage
-				job_manager.next_alternative_stage = nil
-			elseif job_manager.next_interupt_stage then
-				job_manager.interupt_stage = job_manager.next_interupt_stage
-				job_manager.next_interupt_stage = nil
-			elseif job_data.current_stage + 1 <= job_data.stages then
-				job_data.current_stage = job_data.current_stage + 1
-				job_data.last_completed_stage = job_data.last_completed_stage + 1
-			end
-
-			local narrative_data = tweak_data.narrative.jobs[job_data.job_id]
-			local stage = narrative_data.chain[job_data.current_stage]
-			game_settings.level_id = job_manager.interupt_stage or job_manager.alternative_stage or stage.level_id
-		end
-
-		save_tbl.job_preserved = {
-			job_manager = job_manager,
-			game_settings = game_settings,
-			loot_manager = loot_manager,
-			asset_manager = Global.asset_manager,
-			mission_manager = Global.mission_manager,
-		}
-	end
 end
 
-function SavefileManager:_save(param, _, save_system)
-	self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {}, param)
+function SavefileManager:_save(_, _, save_system)
+	self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {})
 
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:save({
