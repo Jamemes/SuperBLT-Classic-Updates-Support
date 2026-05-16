@@ -13,7 +13,7 @@
     },
     {
         "ident": "payday2blt-dev",
-        "version": "1.4.8 [CUS-4] testing 2 fix 2",
+        "version": "1.4.8 [CUS-4] testing 2 fix 3",
         "patchnotes_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/commits/dev",
         "download_url": "https://github.com/Jamemes/SuperBLT-Classic-Updates-Support/archive/refs/heads/dev.zip"
     }
