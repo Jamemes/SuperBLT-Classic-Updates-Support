@@ -1,8 +1,52 @@
 
 local F = table.remove(RequiredScript:split("/"))
-if F == "jobmanager" then
-	Hooks:PostHook(JobManager, "next_stage", "SBLT_CUS.JobManager.next_stage.job_preserve", function(self)
-		if _G.LuaNetworking:IsHost() and not managers.job:is_job_finished() then
+if F == "menumanager" then
+	Hooks:Add("MenuManagerBuildCustomMenus", "SBLT_CUS.add_quit_game_button", function(menu_manager, nodes)
+		local node = nodes.pause
+		if node then
+			table.insert(node._items, node:create_item({type = "MenuItemDivider"}, {
+				name = "quit_game_divider",
+				no_text = true,
+				size = 24
+			}))
+
+			local params = {
+				name = "quit",
+				text_id = "menu_quit",
+				help_id = "menu_quit_help",
+				visible_callback = "show_quit_game_button_in_pause",
+				callback = "quit_game",
+			}
+
+			local quit_game_btn = node:create_item({type = "CoreMenuItem.Item"}, params)
+			quit_game_btn.dirty_callback = callback(node, node, "item_dirty")
+			if node.callback_handler then
+				quit_game_btn:set_callback_handler(node.callback_handler)
+			end
+			table.insert(node._items, quit_game_btn)
+		end
+	end)
+
+	Hooks:PreHook(MenuCallbackHandler, "_dialog_quit_yes", "SBLT_CUS.MenuCallbackHandler._dialog_quit_yes.stop_multiplayer", function()
+		managers.menu:active_menu().logic:navigate_back(true)
+		if Network:multiplayer() then
+			Network:set_multiplayer(false)
+			managers.network:session():send_to_peers("set_peer_left")
+			managers.network:queue_stop_network()
+		end
+	end)
+
+	function MenuCallbackHandler:show_quit_game_button_in_pause()
+		local state = true
+		if managers.job:is_current_job_professional() then
+			state = game_state_machine:current_state_name() == "ingame_waiting_for_players"
+		end
+
+		return _G.LuaNetworking:IsHost() and state
+	end
+
+	Hooks:PostHook(MenuCallbackHandler, "lobby_start_the_game", "SBLT_CUS.MenuCallbackHandler.lobby_start_the_game.preserve_the_heist", function()
+		if not Global.save_slots[Global.save_slots.current_slot].job_preserved and _G.LuaNetworking:IsHost() and managers.job:current_job_id() ~= "safehouse" then
 			Global.save_slots[Global.save_slots.current_slot].job_preserved = {
 				job_manager = Global.job_manager,
 				game_settings = Global.game_settings,
@@ -14,13 +58,7 @@ if F == "jobmanager" then
 			managers.savefile:_save()
 		end
 	end)
-elseif F == "lootmanager" then
-	Hooks:PostHook(LootManager, "_setup", "SBLT_CUS.LootManager._setup.apply_preserved_loot", function()
-		if Global.save_slots and Global.save_slots[Global.save_slots.current_slot] and Global.save_slots[Global.save_slots.current_slot].job_preserved and managers.savefile.job_preserved then
-			Global.loot_manager = Global.save_slots[Global.save_slots.current_slot].job_preserved.loot_manager
-		end
-	end)
-elseif F == "menumanager" then
+
 	Hooks:PostHook(MenuManager, "on_enter_lobby", "SBLT_CUS.MenuManager.on_enter_lobby.load_preserved_heist", function()
 		if Global.save_slots[Global.save_slots.current_slot].job_preserved and managers.savefile.job_preserved then
 			MenuCallbackHandler:lobby_start_the_game()
@@ -43,4 +81,24 @@ elseif F == "menumanager" then
 			data(self, params)
 		end
 	end
+elseif F == "jobmanager" then
+	Hooks:PostHook(JobManager, "next_stage", "SBLT_CUS.JobManager.next_stage.job_preserve", function(self)
+		if _G.LuaNetworking:IsHost() and not managers.job:is_job_finished() then
+			Global.save_slots[Global.save_slots.current_slot].job_preserved = {
+				job_manager = Global.job_manager,
+				game_settings = Global.game_settings,
+				loot_manager = Global.loot_manager,
+				asset_manager = Global.asset_manager,
+				mission_manager = Global.mission_manager,
+			}
+
+			managers.savefile:_save()
+		end
+	end)
+elseif F == "lootmanager" then
+	Hooks:PostHook(LootManager, "_setup", "SBLT_CUS.LootManager._setup.apply_preserved_loot", function()
+		if Global.save_slots and Global.save_slots[Global.save_slots.current_slot] and Global.save_slots[Global.save_slots.current_slot].job_preserved and managers.savefile.job_preserved then
+			Global.loot_manager = Global.save_slots[Global.save_slots.current_slot].job_preserved.loot_manager
+		end
+	end)
 end

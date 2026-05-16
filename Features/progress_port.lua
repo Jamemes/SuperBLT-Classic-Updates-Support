@@ -1,4 +1,4 @@
-Hooks:Add("MenuManagerBuildCustomMenus", "_add_port_progress_from_savefile_input", function(menu_manager, nodes)
+Hooks:Add("MenuManagerBuildCustomMenus", "SBLT_CUS.add_port_progress_from_savefile", function(menu_manager, nodes)
 	local node = nodes.options
 	if node and nodes.main then
 		local pos = 1
