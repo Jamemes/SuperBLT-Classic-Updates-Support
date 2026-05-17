@@ -81,7 +81,7 @@ function SavefileManager:storage_changed()
 	self:_load()
 end
 
-function SavefileManager:saved_data_fix()
+function SavefileManager:ported_data_fix()
 	local save_slot = Global.save_slots.current_slot
 	if not Global.save_slots[save_slot] then
 		return
@@ -186,7 +186,7 @@ function SavefileManager:saved_data_fix()
 				if not tweak_data.weapon[item.weapon_id] then
 					add_to_stash(category, id, item)
 				else
-					for part_index, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
+					for _, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
 						if not tweak_data.weapon.factory.parts[part_id] then
 							add_to_stash(category, id, item)
 							break
@@ -273,9 +273,8 @@ function SavefileManager:perform_load(cache, progress_port)
 		end
 	end
 
-	self:saved_data_fix()
-
 	if progress_port then
+		self:ported_data_fix()
 		Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
 		managers.menu:do_clear_progress()
 	end
@@ -350,7 +349,7 @@ function SavefileManager:_load(selected_slot)
 			local slot_data = type_name(result_data) == "table" and result_data[selected_slot or self.PROGRESS_SLOT]
 			if slot_data then
 				if slot_data.status ~= "OK" then
-					message_dialog("New Save Management System", string.format(slot_data.status == "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_savefile_not_found") or managers.localization:text("sblt_cus_save_not_loaded"), slot_data.status), function()
+					message_dialog(managers.localization:text("sblt_cus_new_save_system"), string.format(slot_data.status == "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_savefile_not_found") or managers.localization:text("sblt_cus_save_not_loaded"), slot_data.status), function()
 						if slot_data.status == "FILE_NOT_FOUND" then
 							self:perform_load(slot_data.data, selected_slot)
 						else
@@ -371,7 +370,7 @@ function SavefileManager:_load(selected_slot)
 		table.insert(self._task_queue, SavefileTaskHandler:new(task, 2, function(save_data)
 			local status = table.get_key(SaveData, save_data:status())
 			if status ~= "OK" then
-				message_dialog("New Save Management System", string.format(status == "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_savefile_not_found") or managers.localization:text("sblt_cus_save_not_loaded"), status), function()
+				message_dialog(managers.localization:text("sblt_cus_new_save_system"), string.format(status == "FILE_NOT_FOUND" and managers.localization:text("sblt_cus_savefile_not_found") or managers.localization:text("sblt_cus_save_not_loaded"), status), function()
 					if status == "FILE_NOT_FOUND" then
 						self:perform_load(save_data:information(), selected_slot)
 					else
@@ -559,7 +558,7 @@ function SavefileManager:port_progress()
 			save_system = self.SAVE_SYSTEM,
 			first_slot = self.MIN_SLOT,
 			last_slot = self.MAX_SLOT
-		}, function(task_data, result_data)
+		}, function(_, result_data)
 			self:port_progress_dialog(result_data)
 		end)
 	elseif type(NewSave) == "userdata" then

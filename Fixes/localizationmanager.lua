@@ -8,6 +8,7 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 		menu_button_show = "Show",
 		sblt_cus_port_progress = "Port the Progress",
 		sblt_cus_port_progress_help = string.format("%s  (Current Update: %s)", "Choose the slot from 0 to 99.", game_update),
+		sblt_cus_new_save_system = "New Save Management System",
 		sblt_cus_try_again = "Try again",
 		sblt_cus_slot_changed = "The slot has been changed",
 		sblt_cus_choose_slot = "Choose the slot",
@@ -34,6 +35,7 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 			menu_button_show = "Показать",
 			sblt_cus_port_progress = "Слот прогресса",
 			sblt_cus_port_progress_help = string.format("%s  (Эта версия: %s)", "Выберите слот с 0 по 99.", game_update),
+			sblt_cus_new_save_system = "Новая система управления сохранением",
 			sblt_cus_try_again = "Попробовать снова",
 			sblt_cus_slot_changed = "Слот изменен",
 			sblt_cus_choose_slot = "Выберите слот",
@@ -50,7 +52,6 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 			sblt_cus_save_not_loaded = "Файл не может быть загружен: %s.",
 			sblt_cus_port_from_savefile = "Вы уверены, что хотите портировать прогресс из файла %s?\n\nВаш текущий прогресс исчезнет.",
 			sblt_cus_dialog_different_version = "Версия игры: %s\nВерсия сохранения: %s\n\nЭтот слот использовался в другой версии игры. Все недоступные предметы будут сохранены до тех пор, пока вы не вернетесь к версии, соответствующей этому слоту. Продолжить?",
-
 		})
 	end
 end)
