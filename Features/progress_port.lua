@@ -1,0 +1,92 @@
+Hooks:Add("MenuManagerBuildCustomMenus", "SBLT_CUS.add_port_progress_from_savefile", function(menu_manager, nodes)
+	local node = nodes.options
+	if node and nodes.main then
+		local pos = 1
+		for id, item in pairs(node._items) do
+			if item:name() == "edit_game_settings" then
+				pos = id
+			end
+		end
+		
+		table.insert(node._items, pos, node:create_item({type = "MenuItemDivider"}, {
+			name = "savefilemanager_divider",
+			no_text = true,
+			size = 18
+		}))
+
+		local params = {
+			name = "port_progress",
+			text_id = "sblt_cus_port_progress",
+			help_id = "sblt_cus_port_progress_help",
+			callback = "port_progress_call",
+		}
+
+		local port_progress_btn = node:create_item({type = "CoreMenuItem.Item"}, params)
+		port_progress_btn.dirty_callback = callback(node, node, "item_dirty")
+		if node.callback_handler then
+			port_progress_btn:set_callback_handler(node.callback_handler)
+		end
+		table.insert(node._items, pos, port_progress_btn)
+
+		table.insert(node._items, pos, node:create_item({type = "MenuItemDivider"}, {
+			name = "port_separator",
+			no_text = true,
+			size = 8
+		}))
+
+		local params = {
+			name = "current_slot",
+			text_id = "",
+			callback = "change_slot_call",
+			localize = false
+		}
+
+		local change_slot_btn = node:create_item({type = "CoreMenuItem.Item"}, params)
+		change_slot_btn.dirty_callback = callback(node, node, "item_dirty")
+		if node.callback_handler then
+			change_slot_btn:set_callback_handler(node.callback_handler)
+		end
+		table.insert(node._items, pos, change_slot_btn)
+	end
+end)
+
+function MenuCallbackHandler:port_progress_call()
+	if _G.LuaNetworking:IsMultiplayer() then
+		managers.system_menu:show({
+			title = managers.localization:text("sblt_cus_port_progress"),
+			text = managers.localization:text("sblt_cus_forbid_in_lobby"),
+			button_list = {{text = managers.localization:text("dialog_ok")}}
+		})
+	else
+		managers.savefile:port_progress()
+	end
+end
+
+function MenuCallbackHandler:change_slot_call()
+	if _G.LuaNetworking:IsMultiplayer() then
+		managers.system_menu:show({
+			title = managers.localization:text("sblt_cus_choose_slot"),
+			text = managers.localization:text("sblt_cus_forbid_in_lobby"),
+			button_list = {{text = managers.localization:text("dialog_ok")}}
+		})
+	else
+		managers.savefile:change_slot(true)
+	end
+end
+
+Hooks:PostHook(MenuManager, "do_clear_progress", "SBLT_CUS.MenuManager.do_clear_progress.reset_stashed_items", function()
+	if Global.save_slots and Global.save_slots[Global.save_slots.current_slot] then
+		Global.save_slots[Global.save_slots.current_slot].stashed_items = {}
+	end
+end)
+
+Hooks:PostHook(MenuOptionInitiator, "modify_node", "SBLT_CUS.MenuOptionInitiator.modify_node.refresh_current_slot_option", function(self, node)
+	local node_name = node:parameters().name
+	if node_name == "options" then
+		local slot = Global.save_slots.current_slot
+		local item = node:item("current_slot")
+		if item then
+			item:set_parameter("text_id", managers.savefile:current_slot(Global.save_slots[slot], slot))
+		end
+	end
+end)

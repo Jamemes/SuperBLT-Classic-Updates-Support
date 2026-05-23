@@ -22,9 +22,13 @@ function SBLT_CUS:game_version(param)
 	local ver = ""
 	local ver_file = io.open("game.ver", 'r')
 	if not ver_file then
-		return "0.0.0"
+		return Application:version() or "0.0.0"
 	end
-	
+
+	if ver == "Tournament" then
+		ver = "1.54.12"
+	end
+
 	for line in ver_file:lines() do
 		ver = line
 	end
@@ -32,12 +36,10 @@ function SBLT_CUS:game_version(param)
 	
 	if param then
 		if type(param) == "number" then
-			if ver == "Tournament" then
-				ver = "1.54.12"
-			end
 			return tonumber(ver:sub(3, #ver)) >= param
-		elseif param == "num" then
-			return tonumber(ver:sub(3, #ver))
+		elseif type(param) == "string" then
+			local ver, _ = string.gsub(ver, "%.", "", 1)
+			return param == "num" and tonumber(ver) or ver
 		end
 	else
 		return ver
