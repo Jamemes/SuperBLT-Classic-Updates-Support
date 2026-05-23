@@ -25,7 +25,7 @@ function SBLT_CUS:game_version(param)
 		return Application:version() or "0.0.0"
 	end
 
-	if param == "ver" and ver == "Tournament" then
+	if ver == "Tournament" then
 		ver = "1.54.12"
 	end
 

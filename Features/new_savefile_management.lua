@@ -140,8 +140,9 @@ function SavefileManager:ported_data_fix()
 		end
 
 		if return_from_stash_allowed then
+			local item_name = (item.mask_id and tweak_data.blackmarket.masks[item.mask_id] and managers.localization:text(tweak_data.blackmarket.masks[item.mask_id].name_id)) or (item.weapon_id and tweak_data.weapon[item.weapon_id] and managers.localization:text(tweak_data.weapon[item.weapon_id].name_id))
 			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-			returned_items = returned_items .. string.format("[Slot %s] %s (%s)", item.slot, item.mask_id or item.weapon_id, item.category:capitalize()) .. "\n"
+			returned_items = returned_items .. string.format("[Slot %s] %s (%s)", item.slot, item_name, item.category:capitalize()) .. "\n"
 			Global.save_slots[save_slot].stashed_items[id] = nil
 		end
 	end
@@ -225,6 +226,7 @@ function SavefileManager:ported_data_fix()
 	end
 
 	Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
+	Global.save_slots[save_slot].inventory_version = SBLT_CUS:game_version()
 end
 
 function SavefileManager:perform_load(cache, progress_port)
@@ -273,13 +275,16 @@ function SavefileManager:perform_load(cache, progress_port)
 		end
 	end
 
-	if progress_port then
-		self:ported_data_fix()
-		Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
-		managers.menu:do_clear_progress()
-	end
-
 	if type(data) == "table" and table.size(data) > 0 then
+		if progress_port then
+			Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
+			managers.menu:do_clear_progress()
+		end
+
+		if not data.inventory_version or (data.inventory_version and data.inventory_version ~= SBLT_CUS:game_version()) then
+			self:ported_data_fix()
+		end
+
 		for _, class in pairs(managers_list) do
 			if managers[class] then
 				if type(managers[class].load) == "function" and class ~= "music" then
@@ -331,8 +336,18 @@ function SavefileManager:perform_load(cache, progress_port)
 		Global.loot_manager = data.job_preserved.loot_manager
 		Global.asset_manager = data.job_preserved.asset_manager
 		Global.mission_manager = data.job_preserved.mission_manager
-		managers.job:activate_job(Global.job_manager.current_job.job_id)
-		managers.network.matchmake:create_lobby(MenuCallbackHandler:get_matchmake_attributes())
+
+		if Global.game_settings.single_player then
+			MenuCallbackHandler:play_single_player()
+			MenuCallbackHandler:start_single_player_job({
+				difficulty = Global.game_settings.difficulty,
+				job_id = Global.job_manager.current_job.job_id
+			})
+		else
+			if managers.job:activate_job(Global.job_manager.current_job.job_id) then
+				managers.network.matchmake:create_lobby(MenuCallbackHandler:get_matchmake_attributes())
+			end
+		end
 	end
 end
 

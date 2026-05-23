@@ -81,6 +81,15 @@ if F == "menumanager" then
 			data(self, params)
 		end
 	end
+
+	local data = MenuManager.show_question_new_safehouse_new_player
+	if type(data) == "function" then
+		function MenuManager:show_question_new_safehouse_new_player(params)
+			if not Global.save_slots[Global.save_slots.current_slot].job_preserved then
+				data(self, params)
+			end
+		end
+	end
 elseif F == "jobmanager" then
 	Hooks:PostHook(JobManager, "next_stage", "SBLT_CUS.JobManager.next_stage.job_preserve", function(self)
 		if _G.LuaNetworking:IsHost() and not managers.job:is_job_finished() then

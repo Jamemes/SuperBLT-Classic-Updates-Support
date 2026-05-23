@@ -51,13 +51,25 @@ Hooks:Add("MenuManagerBuildCustomMenus", "SBLT_CUS.add_port_progress_from_savefi
 end)
 
 function MenuCallbackHandler:port_progress_call()
-	if not _G.LuaNetworking:IsMultiplayer() then
+	if _G.LuaNetworking:IsMultiplayer() then
+		managers.system_menu:show({
+			title = managers.localization:text("sblt_cus_port_progress"),
+			text = managers.localization:text("sblt_cus_forbid_in_lobby"),
+			button_list = {{text = managers.localization:text("dialog_ok")}}
+		})
+	else
 		managers.savefile:port_progress()
 	end
 end
 
 function MenuCallbackHandler:change_slot_call()
-	if not _G.LuaNetworking:IsMultiplayer() then
+	if _G.LuaNetworking:IsMultiplayer() then
+		managers.system_menu:show({
+			title = managers.localization:text("sblt_cus_choose_slot"),
+			text = managers.localization:text("sblt_cus_forbid_in_lobby"),
+			button_list = {{text = managers.localization:text("dialog_ok")}}
+		})
+	else
 		managers.savefile:change_slot(true)
 	end
 end
