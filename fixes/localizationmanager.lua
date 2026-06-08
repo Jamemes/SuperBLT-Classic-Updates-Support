@@ -26,6 +26,10 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 		sblt_cus_save_not_loaded = "Save file can't be loaded: %s.\n\nYou need to select the save file on which you last played in the old save system. ",
 		sblt_cus_port_from_savefile = "Are you sure you want port the progress from the file %s?\n\nYour current progress will be gone.",
 		sblt_cus_dialog_different_version = "Game version: %s\nSave version: %s\n\nThis slot was used on other version of the game. All unavailable items will be stashed until you will return on the version that matched this slot. Continue?",
+		sblt_cus_preserved_contract = "Preserved contract",
+		sblt_cus_preserved_contract_text = "You have an unfinished contract. Do you want to return to this stage?",
+		sblt_cus_continue_the_game = "Continue the game",
+		sblt_cus_continue_the_game_help = "You have an unfinished contract. You can continue the game from the stage where the game was crashed or closed.",
 	})
 
 	if Idstring("russian"):key() == SystemInfo:language():key() then
@@ -54,6 +58,10 @@ Hooks:Add("LocalizationManagerPostInit", "SBLT_CUS_loc", function(...)
 			sblt_cus_save_not_loaded = "Файл не может быть загружен: %s.",
 			sblt_cus_port_from_savefile = "Вы уверены, что хотите портировать прогресс из файла %s?\n\nВаш текущий прогресс исчезнет.",
 			sblt_cus_dialog_different_version = "Версия игры: %s\nВерсия сохранения: %s\n\nЭтот слот использовался в другой версии игры. Все недоступные предметы будут сохранены до тех пор, пока вы не вернетесь к версии, соответствующей этому слоту. Продолжить?",
+			sblt_cus_preserved_contract = "Сохраненный контракт",
+			sblt_cus_preserved_contract_text = "У вас есть незавершенный контракт. Вы хотите вернуться к этому этапу?",
+			sblt_cus_continue_the_game = "Продолжить игру",
+			sblt_cus_continue_the_game_help = "У вас есть незавершенный контракт. Вы можете продолжить игру с того этапа, где игра вылетела или была закрыта.",
 		})
 	end
 end)

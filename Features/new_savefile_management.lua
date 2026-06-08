@@ -304,7 +304,11 @@ function SavefileManager:perform_load(cache, progress_port)
 				end
 
 				if type(managers[class].load_profile) == "function" then
-					managers[class]:load_profile(data)
+					if class == "music" then
+						managers[class]:load_profile(data.music_profile or {})
+					else
+						managers[class]:load_profile(data)
+					end
 				end
 			end
 		end
@@ -329,26 +333,52 @@ function SavefileManager:perform_load(cache, progress_port)
 	Global.savefile_manager.progress_loaded = true
 
 	if data.job_preserved then
-		self.job_preserved = true
+		self.show_continue_job_button = data
+		self:preserved_job_dialog(data)
+	end
+end
 
-		Global.job_manager = data.job_preserved.job_manager
-		Global.game_settings = data.job_preserved.game_settings
-		Global.loot_manager = data.job_preserved.loot_manager
-		Global.asset_manager = data.job_preserved.asset_manager
-		Global.mission_manager = data.job_preserved.mission_manager
+function SavefileManager:preserved_job_dialog(data)
+	local button_list = {}
+	table.insert(button_list, {text = managers.localization:text("dialog_yes"), callback_func = function()
+			self.job_preserved = true
 
-		if Global.game_settings.single_player then
-			MenuCallbackHandler:play_single_player()
-			MenuCallbackHandler:start_single_player_job({
-				difficulty = Global.game_settings.difficulty,
-				job_id = Global.job_manager.current_job.job_id
-			})
-		else
-			if managers.job:activate_job(Global.job_manager.current_job.job_id) then
-				managers.network.matchmake:create_lobby(MenuCallbackHandler:get_matchmake_attributes())
+			Global.job_manager = data.job_preserved.job_manager
+			Global.game_settings = data.job_preserved.game_settings
+			Global.loot_manager = data.job_preserved.loot_manager
+			Global.asset_manager = data.job_preserved.asset_manager
+			Global.mission_manager = data.job_preserved.mission_manager
+
+			if Global.game_settings.single_player then
+				MenuCallbackHandler:play_single_player()
+				MenuCallbackHandler:start_single_player_job({
+					difficulty = Global.game_settings.difficulty,
+					job_id = Global.job_manager.current_job.job_id
+				})
+			else
+				if managers.job:activate_job(Global.job_manager.current_job.job_id) then
+					managers.network.matchmake:create_lobby(MenuCallbackHandler:get_matchmake_attributes())
+				end
 			end
 		end
+	})
+	table.insert(button_list, {text = managers.localization:text("dialog_no"), cancel_button = self.preserved_job_canceled, callback_func = function() self.preserved_job_canceled = true end})
+
+	local job = data.job_preserved.job_manager.current_job
+	local contract_info = {}
+	table.insert(contract_info, string.format("%s %s", managers.localization:text(tweak_data.narrative.jobs[job.job_id].name_id), tweak_data.narrative.jobs[job.job_id].professional and "[" .. managers.localization:to_upper_text("cn_menu_pro_job") .. "]" or ""))
+
+	if job.stages and job.stages > 1 then
+		table.insert(contract_info, managers.localization:text("hud_days_title", {DAY = job.current_stage, DAYS = job.stages}))
 	end
+	
+	table.insert(contract_info, string.rep("", tweak_data:difficulty_to_index(data.job_preserved.game_settings.difficulty) - 2))
+	
+	managers.system_menu:show({
+		title = managers.localization:text("sblt_cus_preserved_contract"),
+		text = managers.localization:text("sblt_cus_preserved_contract_text") .. "\n\n" .. table.concat(contract_info, "\n"),
+		button_list = button_list
+	})
 end
 
 function SavefileManager:_load(selected_slot)
@@ -421,7 +451,12 @@ function SavefileManager:perform_save(save_tbl)
 			end
 
 			if type(managers[class].save_profile) == "function" then
-				managers[class]:save_profile(save_tbl)
+				if class == "music" then
+					save_tbl.music_profile = save_tbl.music_profile or {}
+					managers[class]:save_profile(save_tbl.music_profile)
+				else
+					managers[class]:save_profile(save_tbl)
+				end
 			end
 		end
 	end
