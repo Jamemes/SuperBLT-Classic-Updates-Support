@@ -15,6 +15,18 @@ local WIDTH_MULTIPLIER = NOT_WIN_32 and 0.68 or 0.71
 local BOX_GAP = 13.5
 MenuGuiComponentGeneric = MenuGuiComponentGeneric or class(MenuGuiComponent)
 
+function MenuGuiComponentGeneric:_rec_round_object(object)
+	if object.children then
+		for i, d in ipairs(object:children()) do
+			self:_rec_round_object(d)
+		end
+	end
+
+	local x, y = object:position()
+
+	object:set_position(math.round(x), math.round(y))
+end
+
 function MenuGuiComponentGeneric:init(ws, fullscreen_ws, node)
 	self._ws = ws
 	self._fullscreen_ws = fullscreen_ws
@@ -28,7 +40,7 @@ function MenuGuiComponentGeneric:init(ws, fullscreen_ws, node)
 
 	self._node = node
 	self.make_fine_text = BlackMarketGui.make_fine_text
-	self._rec_round_object = NewSkillTreeGui._rec_round_object
+	self._rec_round_object = self._rec_round_object
 	self._tabs = {}
 	self._tabs_data = {}
 
