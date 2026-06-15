@@ -2,6 +2,26 @@
 local F = table.remove(RequiredScript:split("/"))
 if F == "menumanager" then
 	Hooks:Add("MenuManagerBuildCustomMenus", "SBLT_CUS.add_quit_game_button", function(menu_manager, nodes)
+		local node = nodes.main
+		if node then
+			local params = {
+				name = "continue_the_game",
+				text_id = "sblt_cus_continue_the_game",
+				help_id = "sblt_cus_continue_the_game_help",
+				visible_callback = "sblt_cus_show_continue_the_game_button",
+				callback = "sblt_cus_continue_the_game_callback",
+				font = "fonts/font_large_mf",
+				font_size = 24,
+			}
+
+			local continue_btn = node:create_item({type = "CoreMenuItem.Item"}, params)
+			continue_btn.dirty_callback = callback(node, node, "item_dirty")
+			if node.callback_handler then
+				continue_btn:set_callback_handler(node.callback_handler)
+			end
+			table.insert(node._items, 1, continue_btn)
+		end
+
 		local node = nodes.pause
 		if node then
 			table.insert(node._items, node:create_item({type = "MenuItemDivider"}, {
@@ -36,6 +56,14 @@ if F == "menumanager" then
 		end
 	end)
 
+	function MenuCallbackHandler:sblt_cus_show_continue_the_game_button()
+		return managers.savefile.show_continue_job_button
+	end
+
+	function MenuCallbackHandler:sblt_cus_continue_the_game_callback()
+		managers.savefile:preserved_job_dialog(managers.savefile.show_continue_job_button)
+	end
+
 	function MenuCallbackHandler:show_quit_game_button_in_pause()
 		local state = true
 		if managers.job:is_current_job_professional() then
@@ -46,7 +74,7 @@ if F == "menumanager" then
 	end
 
 	Hooks:PostHook(MenuCallbackHandler, "lobby_start_the_game", "SBLT_CUS.MenuCallbackHandler.lobby_start_the_game.preserve_the_heist", function()
-		if not Global.save_slots[Global.save_slots.current_slot].job_preserved and _G.LuaNetworking:IsHost() and managers.job:current_job_id() ~= "safehouse" then
+		if _G.LuaNetworking:IsHost() and managers.job:current_job_id() ~= "safehouse" then
 			Global.save_slots[Global.save_slots.current_slot].job_preserved = {
 				job_manager = Global.job_manager,
 				game_settings = Global.game_settings,
@@ -62,7 +90,7 @@ if F == "menumanager" then
 	Hooks:PostHook(MenuManager, "on_enter_lobby", "SBLT_CUS.MenuManager.on_enter_lobby.load_preserved_heist", function()
 		if Global.save_slots[Global.save_slots.current_slot].job_preserved and managers.savefile.job_preserved then
 			MenuCallbackHandler:lobby_start_the_game()
-		elseif Global.save_slots[Global.save_slots.current_slot].job_preserved then
+		elseif Global.save_slots[Global.save_slots.current_slot].job_preserved and not managers.savefile.preserved_job_canceled then
 			Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
 			managers.savefile:_save()
 		end
