@@ -76,7 +76,7 @@ end
 
 Hooks:PostHook(MenuManager, "do_clear_progress", "SBLT_CUS.MenuManager.do_clear_progress.reset_stashed_items", function()
 	if Global.save_slots and Global.save_slots[Global.save_slots.current_slot] then
-		Global.save_slots[Global.save_slots.current_slot].stashed_items = {}
+		Global.save_slots[Global.save_slots.current_slot] = nil
 	end
 end)
 

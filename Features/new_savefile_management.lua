@@ -82,151 +82,159 @@ function SavefileManager:storage_changed()
 end
 
 function SavefileManager:ported_data_fix()
-	-- local save_slot = Global.save_slots.current_slot
-	-- if not Global.save_slots[save_slot] then
-	-- 	return
-	-- end
+	local save_slot = Global.save_slots.current_slot
+	if not Global.save_slots[save_slot] then
+		return
+	end
 
-	-- if Global.save_slots[save_slot].SkillTreeManager.VERSION ~= managers.skilltree.VERSION then
-	-- 	Global.save_slots[save_slot]["SkillTreeManager" .. Global.save_slots[save_slot].SkillTreeManager.VERSION] = Global.save_slots[save_slot].SkillTreeManager
-	-- 	if Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION] then
-	-- 		Global.save_slots[save_slot].SkillTreeManager = Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION]
-	-- 	else
-	-- 		managers.skilltree:save(Global.save_slots[save_slot])
-	-- 		managers.menu:show_skilltree_reseted()
-	-- 		Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
-	-- 	end
-	-- end
+	if Global.save_slots[save_slot].SkillTreeManager.VERSION ~= managers.skilltree.VERSION then
+		Global.save_slots[save_slot]["SkillTreeManager" .. Global.save_slots[save_slot].SkillTreeManager.VERSION] = Global.save_slots[save_slot].SkillTreeManager
+		if Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION] then
+			Global.save_slots[save_slot].SkillTreeManager = Global.save_slots[save_slot]["SkillTreeManager" .. managers.skilltree.VERSION]
+		else
+			managers.skilltree:save(Global.save_slots[save_slot])
+			managers.menu:show_skilltree_reseted()
+			Global.save_slots[save_slot].PlayerManager.kit.equipment_slots = {}
+		end
+	end
 	
-	-- Global.save_slots[save_slot].stashed_items = Global.save_slots[save_slot].stashed_items or {}
+	Global.save_slots[save_slot].stashed_items = Global.save_slots[save_slot].stashed_items or {}
 
-	-- local default = managers.blackmarket:get_default_mask_blueprint()
-	-- local blueprint_items = {
-	-- 	color = "colors",
-	-- 	color_a = "colors",
-	-- 	color_b = "colors",
-	-- 	color_c = "colors",
-	-- 	material = "materials",
-	-- 	pattern = "textures",
-	-- }
+	local default = managers.blackmarket:get_default_mask_blueprint()
+	local blueprint_items = {
+		color = "colors",
+		color_a = "colors",
+		color_b = "colors",
+		color_c = "colors",
+		material = "materials",
+		pattern = "textures",
+	}
 	
-	-- local returned_items = ""
-	-- for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
-	-- 	local return_from_stash_allowed = true
+	local returned_items = ""
+	local used_slots = {}
+	for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
+		local return_from_stash_allowed = true
 
-	-- 	if item.mask_id then
-	-- 		if tweak_data.blackmarket.masks[item.mask_id] then
-	-- 			for type_id, blueprints_tweak in pairs(blueprint_items) do
-	-- 				if not default[type_id] and item.blueprint[type_id] then
-	-- 					return_from_stash_allowed = false
-	-- 				end
+		if item.mask_id then
+			if tweak_data.blackmarket.masks[item.mask_id] then
+				for type_id, blueprints_tweak in pairs(blueprint_items) do
+					if not default[type_id] and item.blueprint[type_id] then
+						return_from_stash_allowed = false
+					end
 					
-	-- 				if (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
-	-- 					return_from_stash_allowed = false
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	else
-	-- 		if not tweak_data.weapon[item.weapon_id] then
-	-- 			return_from_stash_allowed = false
-	-- 		else
-	-- 			for _, part_id in pairs(item.blueprint) do
-	-- 				if not tweak_data.weapon.factory.parts[part_id] then
-	-- 					return_from_stash_allowed = false
-	-- 					break
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	end
+					if (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+						return_from_stash_allowed = false
+					end
+				end
+			end
+		else
+			if not tweak_data.weapon[item.weapon_id] then
+				return_from_stash_allowed = false
+			else
+				for _, part_id in pairs(item.blueprint) do
+					if not tweak_data.weapon.factory.parts[part_id] then
+						return_from_stash_allowed = false
+						break
+					end
+				end
+			end
+		end
 
-	-- 	if return_from_stash_allowed then
-	-- 		local item_name = (item.mask_id and tweak_data.blackmarket.masks[item.mask_id] and managers.localization:text(tweak_data.blackmarket.masks[item.mask_id].name_id)) or (item.weapon_id and tweak_data.weapon[item.weapon_id] and managers.localization:text(tweak_data.weapon[item.weapon_id].name_id))
-	-- 		table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
-	-- 		returned_items = returned_items .. string.format("[Slot %s] %s (%s)", item.slot, item_name, item.category:capitalize()) .. "\n"
-	-- 		Global.save_slots[save_slot].stashed_items[id] = nil
-	-- 	end
-	-- end
-	
-	-- if returned_items ~= "" then
-	-- 	message_dialog(managers.localization:text("sblt_cus_returned_title"), managers.localization:text("sblt_cus_returned_text") .. "\n\n" .. returned_items)
-	-- end
+		if return_from_stash_allowed then
+			local item_name = (item.mask_id and tweak_data.blackmarket.masks[item.mask_id] and managers.localization:text(tweak_data.blackmarket.masks[item.mask_id].name_id)) or (item.weapon_id and tweak_data.weapon[item.weapon_id] and managers.localization:text(tweak_data.weapon[item.weapon_id].name_id))
+			if Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] then
+				Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] = nil
+				table.insert(used_slots, Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot])
+			end
+			Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] = item
+			
+			returned_items = returned_items .. string.format("[Slot %s] %s (%s)", item.slot, item_name, item.category:capitalize()) .. "\n"
+			Global.save_slots[save_slot].stashed_items[id] = nil
+		end
+	end
 
-	-- local stashed_items = ""
-	-- local function add_to_stash(category, id, item)
-	-- 	if not self["stashed_equipped_" .. category] then
-	-- 		self["stashed_equipped_" .. category] = item.equipped
-	-- 	end
+	PrintTable(used_slots)
+
+	if returned_items ~= "" then
+		message_dialog(managers.localization:text("sblt_cus_returned_title"), managers.localization:text("sblt_cus_returned_text") .. "\n\n" .. returned_items)
+	end
+
+	local stashed_items = ""
+	local function add_to_stash(category, id, item)
+		if not self["stashed_equipped_" .. category] then
+			self["stashed_equipped_" .. category] = item.equipped
+		end
 		
-	-- 	item.category = category
-	-- 	item.slot = id
-	-- 	item.equipped = false
-	-- 	table.insert(Global.save_slots[save_slot].stashed_items, item)
-	-- 	Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
-	-- 	stashed_items = stashed_items .. string.format("[Slot %s] %s (%s)", id, item.mask_id or item.weapon_id, category:capitalize()) .. "\n"
-	-- end
+		item.category = category
+		item.slot = id
+		item.equipped = false
+		table.insert(Global.save_slots[save_slot].stashed_items, item)
+		Global.save_slots[save_slot].blackmarket.crafted_items[category][id] = nil
+		stashed_items = stashed_items .. string.format("[Slot %s] %s (%s)", id, item.mask_id or item.weapon_id, category:capitalize()) .. "\n"
+	end
 
-	-- for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
-	-- 	for id, item in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category]) do
-	-- 		if item.mask_id then
-	-- 			if not tweak_data.blackmarket.masks[item.mask_id] then
-	-- 				add_to_stash("masks", id, item)
-	-- 			else
-	-- 				if id == 1 then
-	-- 					Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint = default
-	-- 				else
-	-- 					for type_id, blueprints_tweak in pairs(blueprint_items) do
-	-- 						if not default[type_id] and item.blueprint[type_id] then
-	-- 							add_to_stash("masks", id, item)
-	-- 						elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
-	-- 							add_to_stash("masks", id, item)
-	-- 						end
-	-- 					end
-	-- 				end
-	-- 			end
-	-- 		else
-	-- 			if not tweak_data.weapon[item.weapon_id] then
-	-- 				add_to_stash(category, id, item)
-	-- 			else
-	-- 				for _, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
-	-- 					if not tweak_data.weapon.factory.parts[part_id] then
-	-- 						add_to_stash(category, id, item)
-	-- 						break
-	-- 					end
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	end
+	for category, data in pairs(Global.save_slots[save_slot].blackmarket.crafted_items) do
+		for id, item in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category]) do
+			if item.mask_id then
+				if not tweak_data.blackmarket.masks[item.mask_id] then
+					add_to_stash("masks", id, item)
+				else
+					if id == 1 then
+						Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint = default
+					else
+						for type_id, blueprints_tweak in pairs(blueprint_items) do
+							if not default[type_id] and item.blueprint[type_id] then
+								add_to_stash("masks", id, item)
+							elseif (default[type_id] and not item.blueprint[type_id]) or (item.blueprint[type_id] and default[type_id] and not tweak_data.blackmarket[blueprints_tweak][item.blueprint[type_id].id]) then
+								add_to_stash("masks", id, item)
+							end
+						end
+					end
+				end
+			else
+				if not tweak_data.weapon[item.weapon_id] then
+					add_to_stash(category, id, item)
+				else
+					for _, part_id in pairs(Global.save_slots[save_slot].blackmarket.crafted_items[category][id].blueprint) do
+						if not tweak_data.weapon.factory.parts[part_id] then
+							add_to_stash(category, id, item)
+							break
+						end
+					end
+				end
+			end
+		end
 
-	-- 	if self["stashed_equipped_" .. category] then
-	-- 		if category == "masks" then
-	-- 			Global.save_slots[save_slot].blackmarket.crafted_items[category][1].equipped = true
-	-- 		else
-	-- 			local weapon_id = category == "primaries" and "amcar" or "glock_17"
-	-- 			local factory_id = managers.weapon_factory:get_factory_id_by_weapon_id(weapon_id)
-	-- 			local blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(factory_id))
+		if self["stashed_equipped_" .. category] then
+			if category == "masks" then
+				Global.save_slots[save_slot].blackmarket.crafted_items[category][1].equipped = true
+			else
+				local weapon_id = category == "primaries" and "amcar" or "glock_17"
+				local factory_id = managers.weapon_factory:get_factory_id_by_weapon_id(weapon_id)
+				local blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(factory_id))
 				
-	-- 			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], 1, {
-	-- 				weapon_id = weapon_id,
-	-- 				factory_id = factory_id,
-	-- 				blueprint = blueprint,
-	-- 				equipped = true
-	-- 			})
-	-- 		end
-	-- 	end
-	-- end
+				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], {
+					weapon_id = weapon_id,
+					factory_id = factory_id,
+					blueprint = blueprint,
+					equipped = true
+				})
+			end
+		end
+	end
 
-	-- if stashed_items ~= "" then
-	-- 	message_dialog(managers.localization:text("sblt_cus_stashed_title"), managers.localization:text("sblt_cus_stashed_text") .. "\n\n" .. stashed_items)
-	-- end
+	if stashed_items ~= "" then
+		message_dialog(managers.localization:text("sblt_cus_stashed_title"), managers.localization:text("sblt_cus_stashed_text") .. "\n\n" .. stashed_items)
+	end
 
-	-- for _, deployable in pairs(Global.save_slots[save_slot].PlayerManager.kit.equipment_slots) do
-	-- 	if not tweak_data.equipments[deployable] then
-	-- 		table.delete(Global.save_slots[save_slot].PlayerManager.kit.equipment_slots, deployable)
-	-- 	end
-	-- end
+	for _, deployable in pairs(Global.save_slots[save_slot].PlayerManager.kit.equipment_slots) do
+		if not tweak_data.equipments[deployable] then
+			table.delete(Global.save_slots[save_slot].PlayerManager.kit.equipment_slots, deployable)
+		end
+	end
 
-	-- Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
-	-- Global.save_slots[save_slot].inventory_version = SBLT_CUS:game_version()
+	Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
+	Global.save_slots[save_slot].inventory_version = SBLT_CUS:game_version()
 end
 
 function SavefileManager:perform_load(cache, progress_port)
@@ -277,13 +285,13 @@ function SavefileManager:perform_load(cache, progress_port)
 
 	if type(data) == "table" and table.size(data) > 0 then
 		if progress_port then
-			Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
 			managers.menu:do_clear_progress()
+			Global.save_slots[Global.save_slots.current_slot] = data
 		end
 
-		-- if not data.inventory_version or (data.inventory_version and data.inventory_version ~= SBLT_CUS:game_version()) then
-		-- 	self:ported_data_fix()
-		-- end
+		if not data.inventory_version or (data.inventory_version and data.inventory_version ~= SBLT_CUS:game_version()) then
+			self:ported_data_fix()
+		end
 
 		for _, class in pairs(managers_list) do
 			if managers[class] then
