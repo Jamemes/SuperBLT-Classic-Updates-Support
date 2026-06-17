@@ -111,6 +111,7 @@ function SavefileManager:ported_data_fix()
 	}
 	
 	local returned_items = ""
+	local used_slots = {}
 	for id, item in pairs(Global.save_slots[save_slot].stashed_items) do
 		local return_from_stash_allowed = true
 
@@ -141,12 +142,25 @@ function SavefileManager:ported_data_fix()
 
 		if return_from_stash_allowed then
 			local item_name = (item.mask_id and tweak_data.blackmarket.masks[item.mask_id] and managers.localization:text(tweak_data.blackmarket.masks[item.mask_id].name_id)) or (item.weapon_id and tweak_data.weapon[item.weapon_id] and managers.localization:text(tweak_data.weapon[item.weapon_id].name_id))
-			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[item.category], item.slot, item)
+
+			local used_slot_item = Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot]
+			if used_slot_item then
+				used_slot_item.category = item.category
+				table.insert(used_slots, used_slot_item)
+			end
+			Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] = item
+			
 			returned_items = returned_items .. string.format("[Slot %s] %s (%s)", item.slot, item_name, item.category:capitalize()) .. "\n"
 			Global.save_slots[save_slot].stashed_items[id] = nil
 		end
 	end
-	
+
+	if table.size(used_slots) > 0 then
+		for _, moved_item in pairs(used_slots) do
+			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[moved_item.category], moved_item)
+		end
+	end
+
 	if returned_items ~= "" then
 		message_dialog(managers.localization:text("sblt_cus_returned_title"), managers.localization:text("sblt_cus_returned_text") .. "\n\n" .. returned_items)
 	end
@@ -205,7 +219,7 @@ function SavefileManager:ported_data_fix()
 				local factory_id = managers.weapon_factory:get_factory_id_by_weapon_id(weapon_id)
 				local blueprint = deep_clone(managers.weapon_factory:get_default_blueprint_by_factory_id(factory_id))
 				
-				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], 1, {
+				table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[category], {
 					weapon_id = weapon_id,
 					factory_id = factory_id,
 					blueprint = blueprint,
@@ -227,6 +241,7 @@ function SavefileManager:ported_data_fix()
 
 	Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
 	Global.save_slots[save_slot].inventory_version = SBLT_CUS:game_version()
+	Global.save_slots[save_slot].job_preserved = nil
 end
 
 function SavefileManager:perform_load(cache, progress_port)
@@ -277,8 +292,8 @@ function SavefileManager:perform_load(cache, progress_port)
 
 	if type(data) == "table" and table.size(data) > 0 then
 		if progress_port then
-			Global.save_slots[Global.save_slots.current_slot].job_preserved = nil
 			managers.menu:do_clear_progress()
+			Global.save_slots[Global.save_slots.current_slot] = data
 		end
 
 		if not data.inventory_version or (data.inventory_version and data.inventory_version ~= SBLT_CUS:game_version()) then
@@ -464,10 +479,16 @@ function SavefileManager:perform_save(save_tbl)
 	if not managers.infamy and old_data.ExperienceManager then
 		save_tbl.ExperienceManager.rank = old_data.ExperienceManager.rank
 	end
+
+	if not save_tbl.game_version then
+		save_tbl.game_version = managers.network.matchmake._BUILD_SEARCH_INTEREST_KEY
+	end
 end
 
 function SavefileManager:_save(_, _, save_system)
-	self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {})
+	local slot = Global.save_slots.current_slot
+	Global.save_slots[slot] = Global.save_slots[slot] or {}
+	self:perform_save(Global.save_slots[slot])
 
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:save({
