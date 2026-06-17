@@ -142,9 +142,11 @@ function SavefileManager:ported_data_fix()
 
 		if return_from_stash_allowed then
 			local item_name = (item.mask_id and tweak_data.blackmarket.masks[item.mask_id] and managers.localization:text(tweak_data.blackmarket.masks[item.mask_id].name_id)) or (item.weapon_id and tweak_data.weapon[item.weapon_id] and managers.localization:text(tweak_data.weapon[item.weapon_id].name_id))
-			if Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] then
-				Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] = nil
-				table.insert(used_slots, Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot])
+
+			local used_slot_item = Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot]
+			if used_slot_item then
+				used_slot_item.category = item.category
+				table.insert(used_slots, used_slot_item)
 			end
 			Global.save_slots[save_slot].blackmarket.crafted_items[item.category][item.slot] = item
 			
@@ -153,7 +155,11 @@ function SavefileManager:ported_data_fix()
 		end
 	end
 
-	PrintTable(used_slots)
+	if table.size(used_slots) > 0 then
+		for _, moved_item in pairs(used_slots) do
+			table.insert(Global.save_slots[save_slot].blackmarket.crafted_items[moved_item.category], moved_item)
+		end
+	end
 
 	if returned_items ~= "" then
 		message_dialog(managers.localization:text("sblt_cus_returned_title"), managers.localization:text("sblt_cus_returned_text") .. "\n\n" .. returned_items)
@@ -235,6 +241,7 @@ function SavefileManager:ported_data_fix()
 
 	Global.save_slots[save_slot].blackmarket.new_item_type_unlocked = {}
 	Global.save_slots[save_slot].inventory_version = SBLT_CUS:game_version()
+	Global.save_slots[save_slot].job_preserved = nil
 end
 
 function SavefileManager:perform_load(cache, progress_port)
@@ -472,10 +479,16 @@ function SavefileManager:perform_save(save_tbl)
 	if not managers.infamy and old_data.ExperienceManager then
 		save_tbl.ExperienceManager.rank = old_data.ExperienceManager.rank
 	end
+
+	if not save_tbl.game_version then
+		save_tbl.game_version = managers.network.matchmake._BUILD_SEARCH_INTEREST_KEY
+	end
 end
 
 function SavefileManager:_save(_, _, save_system)
-	self:perform_save(Global.save_slots[Global.save_slots.current_slot] or {})
+	local slot = Global.save_slots.current_slot
+	Global.save_slots[slot] = Global.save_slots[slot] or {}
+	self:perform_save(Global.save_slots[slot])
 
 	if type(SaveGameManager) == "userdata" then
 		SaveGameManager:save({
