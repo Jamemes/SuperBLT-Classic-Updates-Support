@@ -1,7 +1,7 @@
 _G.SBLT_CUS = {}
 SBLT_CUS.path = ModPath
 
-if not (blt and blt.db_create_entry) then
+if not (blt and blt.db_create_entry) and type(SystemFS) ~= "nil" then
 	if not SystemFS:exists("mods/saves") then
 		log('creating "mods/saves"')
 		os.execute('mkdir "mods/saves"')
