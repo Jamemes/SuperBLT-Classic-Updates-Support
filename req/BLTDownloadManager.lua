@@ -159,9 +159,9 @@ function BLTDownloadManager:clbk_download_finished(data, http_id, request_info)
 		end
 
 		local file_path = Application:nice_path(BLTModManager.Constants:DownloadsDirectory() .. tostring(download.update:GetId()) .. ".zip")
-		local temp_install_dir = Application:nice_path(BLTModManager.Constants:DownloadsDirectory() .. tostring(http_id))
+		local temp_install_dir = Application:nice_path((download.update.dir:find("AppData") and download.update.dir or BLTModManager.Constants:DownloadsDirectory()) .. tostring(http_id))
 		local install_path = Application:nice_path(download.update:GetInstallDirectory() .. download.update:GetInstallFolder())
-
+		
 		local cleanup = function(full)
 			io.remove_directory_and_files(temp_install_dir)
 			if full then

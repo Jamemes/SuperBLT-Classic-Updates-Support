@@ -212,34 +212,50 @@ function BLT:FindMods()
 		return {}
 	end
 
-	for index, directory in pairs(folders) do
-		-- Check if this directory is excluded from being checked for mods (logs, saves, etc.)
-		if not self.Mods:IsExcludedDirectory(directory) then
-			local mod_path = mods_directory .. directory .. "/"
+	local function check_folder_for_mods(mods_path, mods_folders)
+		for index, directory in pairs(mods_folders) do
+			-- Check if this directory is excluded from being checked for mods (logs, saves, etc.)
+			if not self.Mods:IsExcludedDirectory(directory) then
+				local mod_path = mods_path .. directory .. "/"
 
-			-- Attempt to read the mod defintion file
-			local file = io.open(mod_path .. "mod.txt")
-			if file then
-				-- Read the file contents
-				local file_contents = file:read("*all")
-				file:close()
+				-- Attempt to read the mod defintion file
+				local file = io.open(mod_path .. "mod.txt")
+				if file then
+					-- Read the file contents
+					local file_contents = file:read("*all")
+					file:close()
 
-				-- Create a BLT mod from the loaded data
-				local mod_content = json.decode(file_contents)
-				if mod_content then
-					local new_mod, valid = BLTMod:new(directory, mod_content, mod_path)
-					if valid then
-						table.insert(mods_list, new_mod)
+					-- Create a BLT mod from the loaded data
+					local mod_content = json.decode(file_contents)
+					if mod_content then
+						local new_mod, valid = BLTMod:new(directory, mod_content, mod_path)
+						if valid then
+							table.insert(mods_list, new_mod)
+						end
+					else
+						self:Log(LogLevel.ERROR, "[BLT] An error occured while loading mod.txt from: " .. tostring(mod_path))
 					end
 				else
-					self:Log(LogLevel.ERROR, "[BLT] An error occured while loading mod.txt from: " .. tostring(mod_path))
+					self:Log(LogLevel.WARN, "[BLT] Could not read or find mod.txt in " .. tostring(mod_path))
 				end
-			else
-				self:Log(LogLevel.WARN, "[BLT] Could not read or find mod.txt in " .. tostring(mod_path))
 			end
 		end
 	end
 
+	check_folder_for_mods(mods_directory, folders)
+
+	-- %AppData%\Local\PAYDAY 2\mods
+	local local_folder_path = os.getenv("LOCALAPPDATA")
+	if local_folder_path then
+		local local_mods_directory = local_folder_path .. "/PAYDAY 2/mods/"
+		if file.DirectoryExists(local_mods_directory) then
+			local local_folders = file.GetDirectories(local_mods_directory)
+			if local_folders then
+				check_folder_for_mods(local_mods_directory, local_folders)
+			end
+		end
+	end
+	
 	return mods_list
 end
 
